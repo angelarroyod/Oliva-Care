@@ -6,16 +6,19 @@ import { supabase } from './supabase';
 // never hears about deletes (undo). Live lists also register here, and every
 // successful write through mutate() refetches the named tables on this device.
 // ponytail: other devices catch up on their next realtime change.
-const listeners = new Map<string, Set<() => void>>();
+const listeners = new Map<string, Set<() => unknown>>();
 
-export function onInvalidate(table: string, fn: () => void) {
-  const set = listeners.get(table) ?? new Set<() => void>();
+export function onInvalidate(table: string, fn: () => unknown) {
+  const set = listeners.get(table) ?? new Set<() => unknown>();
   listeners.set(table, set.add(fn));
   return () => set.delete(fn);
 }
 
+// Resolves once every refetch it started has settled.
 export function invalidate(...tables: string[]) {
-  for (const t of tables) listeners.get(t)?.forEach((fn) => fn());
+  const runs: unknown[] = [];
+  for (const t of tables) listeners.get(t)?.forEach((fn) => runs.push(fn()));
+  return Promise.allSettled(runs);
 }
 
 // Back online: realtime doesn't replay what changed meanwhile, so refetch every live list.
@@ -27,7 +30,8 @@ export function invalidateAll() {
 // request (method, url, headers, body) on the phone and flush() replays the
 // queue in order when the connection returns. Auth is added at send time and
 // never stored. Writes stay idempotent on replay: doses upsert on
-// (schedule_id, scheduled_for), a duplicate (23505) counts as already sent.
+// (schedule_id, scheduled_for), inserts carry a client id, and a duplicate
+// (23505) counts as already sent.
 // ponytail: reads PostgrestBuilder's method/url/headers/body fields (db.test
 // builds a real client, so a supabase-js change that moves them fails there).
 // Stored with SecureStore (prefs), which warns above 2 KB; move to
@@ -39,6 +43,7 @@ export type FlushResult = { sent: number; failed: number };
 const KEY = 'tend.outbox';
 let online = true;
 let outbox: Entry[] = [];
+let sent: Entry[] = []; // sent by flush(), still shown in live lists until they have refetched
 let lastId = 0; // the entry the latest mutate() queued, 0 if it went straight to the server
 let inFlight = 0;
 let flushing: Promise<FlushResult> | null = null;
@@ -55,19 +60,35 @@ let loading: Promise<void> | null = null;
 const ready = () =>
   (loading ??= readPref(KEY).then((v) => {
     try {
-      if (v) outbox = [...(JSON.parse(v) as Entry[]), ...outbox];
+      const stored = v ? (JSON.parse(v) as Entry[]) : [];
+      if (!stored.length) return;
+      outbox = [...stored, ...outbox];
+      emit();
     } catch {
       // ponytail: unreadable queue starts empty rather than blocking every write.
     }
-    emit();
   }));
 
 // For useSyncExternalStore: { online, pending } with a stable identity between changes.
+// The first subscriber loads a queue saved in an earlier session, so it shows
+// (banner, live lists) even when the app starts offline.
 export const subscribeOutbox = (fn: () => void) => {
   subs.add(fn);
+  void ready();
   return () => { subs.delete(fn); };
 };
 export const outboxSnapshot = () => snap;
+
+// Queued writes to one table, oldest first, so live lists can show them before
+// they're sent (useLiveList). `at`: when it was queued (an entry id is Date.now()
+// plus a fraction). RPC urls (/rest/v1/rpc/…) never match a table.
+export type PendingWrite = { method: string; query: URLSearchParams; body: unknown; at: string };
+export const pendingWrites = (table: string): PendingWrite[] =>
+  [...sent, ...outbox].flatMap((e) => {
+    const url = new URL(e.url);
+    if (!url.pathname.endsWith(`/rest/v1/${table}`)) return [];
+    return [{ method: e.method, query: url.searchParams, body: e.body, at: new Date(Math.floor(e.id)).toISOString() }];
+  });
 
 // Returns true when this flipped the state.
 export function setOnline(on: boolean) {
@@ -153,6 +174,7 @@ export function flush() {
   return (flushing ??= (async () => {
     const r: FlushResult = { sent: 0, failed: 0 };
     const touched = new Set<string>();
+    const done: Entry[] = [];
     try {
       await ready();
       while (online && outbox.length) {
@@ -163,6 +185,10 @@ export function flush() {
         if (res === 'retry') break;
         r[res]++;
         e.tables.forEach((t) => touched.add(t));
+        if (res === 'sent') {
+          done.push(e);
+          sent = [...sent, e];
+        }
         outbox = outbox.filter((x) => x.id !== e.id);
         persist();
         emit();
@@ -171,7 +197,13 @@ export function flush() {
       inFlight = 0;
       flushing = null;
     }
-    invalidate(...touched);
+    // The sent rows stay on screen until the refetch brings the real ones, so
+    // an offline "Dada" never flips back to pending while the queue goes out.
+    void invalidate(...touched).then(() => {
+      if (!done.length) return;
+      sent = sent.filter((x) => !done.includes(x));
+      emit();
+    });
     return r;
   })());
 }

@@ -82,6 +82,7 @@ export default function NurseSignos() {
     const saveErr = await mutate(
       supabase.from('vital_readings').insert(
         rows.map((r) => ({
+          id: randomUUID(), // so a queued reading is replaced by the real row once sent, not doubled
           patient_id: pid, control_id: controlId, ...r, taken_at: takenAt, taken_by: meId || null,
           note: note.trim() || null, family_notified: notifyOn,
         })),

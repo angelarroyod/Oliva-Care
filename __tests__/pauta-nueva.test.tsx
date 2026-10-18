@@ -16,6 +16,7 @@ jest.mock('@/features/care/hooks', () => ({
 }));
 const mockInsert = jest.fn((..._a: unknown[]) => Promise.resolve({ error: null as null | { message: string } }));
 jest.mock('@/lib/supabase', () => ({ supabase: { from: () => ({ insert: mockInsert }) } }));
+jest.mock('expo-crypto', () => ({ randomUUID: () => 's-new' }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -58,7 +59,7 @@ test('presets fill the hours and saving inserts a dated plan', async () => {
   fireEvent.press(screen.getByText('Guardar medicamento'));
   await waitFor(() => expect(mockBack).toHaveBeenCalled());
   expect(mockInsert).toHaveBeenCalledWith({
-    patient_id: 'p1', name: 'Paracetamol', dose: '1 g', purpose: null, times: ['06:00', '14:00', '22:00'],
+    id: 's-new', patient_id: 'p1', name: 'Paracetamol', dose: '1 g', purpose: null, times: ['06:00', '14:00', '22:00'],
     reminder_mode: 'exact', reminder_minutes: 0, start_date: '2026-10-15', end_date: '2026-10-19', created_by: 'c', updated_by: 'c',
   });
   expect(screen.getByText('Paracetamol añadido. Próxima dosis hoy a las 22:00.')).toBeTruthy();

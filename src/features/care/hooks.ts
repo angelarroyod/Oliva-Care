@@ -146,13 +146,14 @@ export function useCare() {
 export type Care = ReturnType<typeof useCare>;
 
 // ---------- messages (unchanged) ----------
-export type Message = { body: string; time: string; fromSelf: boolean; senderId: string };
-type MsgRow = { sender_id: string; body: string; created_at: string };
+export type Message = { body: string; time: string; fromSelf: boolean; senderId: string; pending: boolean };
+type MsgRow = { sender_id: string; body: string; created_at: string; pending?: boolean };
 export const mapMessage = (r: MsgRow, selfId: string): Message => ({
   body: r.body,
   time: hhmm(new Date(r.created_at)),
   fromSelf: r.sender_id === selfId,
   senderId: r.sender_id,
+  pending: !!r.pending, // written offline, still in the outbox
 });
 export const useMessages = (pid: string | undefined, selfId: string) =>
   useLiveList<MsgRow, Message>('messages', pid, { col: 'created_at', asc: true }, (r) => mapMessage(r, selfId));

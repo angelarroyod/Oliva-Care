@@ -61,6 +61,7 @@ export type DoseRow = {
   recorded_late: boolean;
   skip_reason: SkipReason | null;
   skip_note: string | null;
+  pending?: boolean; // saved offline, not sent yet (useLiveList)
 };
 
 export type ReadingRow = {

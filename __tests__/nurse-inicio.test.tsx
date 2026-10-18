@@ -45,6 +45,7 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, navigate: 
 const mockInsert = jest.fn((_row: unknown) => Promise.resolve({ error: null }));
 const mockFrom = jest.fn((_table: string) => ({ insert: mockInsert }));
 jest.mock('@/lib/supabase', () => ({ supabase: { from: (t: string) => mockFrom(t) } }));
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'e-new' }));
 
 jest.mock('@/features/care/hooks', () => ({
   useCare: () => ({
@@ -119,7 +120,7 @@ test('an open fever comes first: calling logs the doctor call and opens the dial
   await waitFor(() => expect(openURL).toHaveBeenCalledWith('tel:'));
   expect(mockFrom).toHaveBeenCalledWith('care_events');
   expect(mockInsert).toHaveBeenCalledWith(
-    expect.objectContaining({ patient_id: 'p1', author_id: 'c', type: 'doctor_call', severity: 'warning', body: 'Fiebre de 38,2 °C a las 23:40.' }),
+    expect.objectContaining({ id: 'e-new', patient_id: 'p1', author_id: 'c', type: 'doctor_call', severity: 'warning', body: 'Fiebre de 38,2 °C a las 23:40.' }),
   );
   expect(screen.getByText('Llamando al Dr. Méndez… Queda anotado que avisaste al médico.')).toBeTruthy();
 });

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { randomUUID } from 'expo-crypto';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
@@ -52,6 +53,8 @@ export default function PautaNueva() {
     setBusy(true);
     const err = await mutate(
       supabase.from('medication_schedules').insert({
+        // Client id: a schedule saved offline shows (and its doses can be recorded) before it's sent.
+        id: randomUUID(),
         patient_id: pid,
         name: name.trim(),
         dose: dose.trim(),

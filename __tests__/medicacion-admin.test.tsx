@@ -99,6 +99,14 @@ test('header, progress and grouped dose cards come from live data', () => {
   expect(screen.getAllByText('Diabetes · con la comida')).toHaveLength(2);
 });
 
+test('a dose recorded offline shows as given and says it has not gone out yet', () => {
+  mockRows = [...ROWS, row('los', mockAt(15, 23, 30), { recorded_by: 'c', recorded_at: iso(mockAt(15, 23, 35)), pending: true })];
+  show();
+  expect(screen.getByText('Dada · 23:35')).toBeTruthy();
+  expect(screen.getByText('Por Carmen Morales. Pendiente de enviar.')).toBeTruthy();
+  expect(screen.getByText('Por Rosa García.')).toBeTruthy(); // sent: no marker
+});
+
 test('Marcar como dada upserts the dose and Deshacer sets it back to pending', async () => {
   show();
   fireEvent.press(screen.getAllByText('Marcar como dada')[0]);

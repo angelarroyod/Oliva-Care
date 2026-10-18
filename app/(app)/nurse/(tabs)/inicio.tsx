@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { randomUUID } from 'expo-crypto';
 import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -59,6 +60,7 @@ export default function NurseInicio() {
     setBusy(true);
     const err = await mutate(
       supabase.from('care_events').insert({
+        id: randomUUID(), // a resend after a lost response is a duplicate, not a second call
         patient_id: pid, author_id: meId, type: 'doctor_call', title: 'Aviso al médico', body: `${feverText(fever)}.`, severity: 'warning',
       }),
       'care_events',

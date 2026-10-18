@@ -82,7 +82,13 @@ export default function NurseMedicacion() {
   const schedOf = (d: Dose) => schedules.find((s) => s.id === d.scheduleId) as ScheduleRow;
   const who = (t: string) => onShift(nurses, t)?.short ?? 'quien esté de turno';
 
+  // Recorded offline: the card already shows it, the line says it hasn't gone out.
   const look = (d: Dose): Look => {
+    const l = stateLook(d);
+    return d.row?.pending ? { ...l, line: `${l.line} Pendiente de enviar.` } : l;
+  };
+
+  const stateLook = (d: Dose): Look => {
     const r = d.row;
     if (d.status === 'pending') {
       const s = schedOf(d);

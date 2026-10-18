@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { randomUUID } from 'expo-crypto';
 import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert, StyleSheet, AccessibilityInfo } from 'react-native';
 import { colors, font, radius } from '@/theme';
 import { Screen } from '@/components/Screen';
@@ -43,12 +44,14 @@ export default function Mensajes() {
     const body = text.trim();
     if (!body || !pid) return;
     setDraft('');
-    const err = await mutate(supabase.from('messages').insert({ patient_id: pid, sender_id: meId, body }), 'messages');
+    // Client id: a resend after a lost response is a duplicate (23505), not a second
+    // message, and the queued bubble is replaced by the real row, not doubled.
+    const err = await mutate(supabase.from('messages').insert({ id: randomUUID(), patient_id: pid, sender_id: meId, body }), 'messages');
     if (err) {
       setDraft(body);
       Alert.alert('No se pudo enviar', err);
     } else if (lastQueued()) {
-      toast.show(SAVED_OFFLINE); // it shows up in the chat once it's sent
+      toast.show(SAVED_OFFLINE); // the bubble shows "Pendiente de enviar" until it goes out
     }
   };
 
@@ -122,10 +125,16 @@ function Bubble({ m, who }: { m: Message; who: string }) {
   const self = m.fromSelf;
   return (
     <View style={[s.bubbleWrap, { alignSelf: self ? 'flex-end' : 'flex-start' }]}>
-      <View accessible accessibilityLabel={self ? `Tú dijiste: ${m.body}` : `${who} dijo: ${m.body}`} style={[s.bubble, self ? s.self : s.other]}>
+      <View
+        accessible
+        accessibilityLabel={`${self ? `Tú dijiste: ${m.body}` : `${who} dijo: ${m.body}`}${m.pending ? ', pendiente de enviar' : ''}`}
+        style={[s.bubble, self ? s.self : s.other]}
+      >
         <T size={16} lh={1.4} color={self ? colors.white : colors.ink}>{m.body}</T>
       </View>
-      <T size={13} color={colors.ink2} style={{ textAlign: self ? 'right' : 'left', fontVariant: ['tabular-nums'] }}>{m.time}</T>
+      <T size={13} color={colors.ink2} style={{ textAlign: self ? 'right' : 'left', fontVariant: ['tabular-nums'] }}>
+        {m.pending ? `${m.time} · Pendiente de enviar` : m.time}
+      </T>
     </View>
   );
 }

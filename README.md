@@ -56,7 +56,7 @@ Fill `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from your Su
 npm start
 ```
 
-- **Supabase:** run the SQL files in `supabase/migrations/` in order in the SQL Editor: `0001_schema.sql`, `0002_rls.sql`, `0003_care_features.sql`. `0003` is idempotent and purely additive (see [Data model](#data-model)). Before running it on a project with old data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`).
+- **Supabase:** run the SQL files in `supabase/migrations/` in order in the SQL Editor: `0001_schema.sql`, `0002_rls.sql`, `0003_care_features.sql`, `0004_vital_readings_unique.sql`. `0003` is idempotent and purely additive (see [Data model](#data-model)). Before running it on a project with old data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`).
 - **Phone (Expo Go):** scan the QR from `npm start`; phone and computer on the same Wi-Fi, or `npx expo start --tunnel`.
 - **Web preview:** `npm run web`.
 - Without `.env` the UI still loads; auth calls just fail.
@@ -71,7 +71,7 @@ npm test
 npm run typecheck
 ```
 
-CI runs both on every push and pull request (41 suites, 247 tests). The care logic (doses, severity, shifts, timeline, family aggregates) is pure TypeScript with unit tests; screens have React Native Testing Library tests.
+CI runs both on every push and pull request (43 suites, 268 tests). The care logic (doses, severity, shifts, timeline, family aggregates) is pure TypeScript with unit tests; screens have React Native Testing Library tests.
 
 ## Data model
 
@@ -93,7 +93,7 @@ How it behaves:
 - **Who gets a reminder** is whoever is on shift when it fires; a nurse without a fixed shift covers the gaps.
 - **Severity:** *warn* outside the patient's normal range, *alert* outside the alert band; blood pressure takes the worse of systolic and diastolic; glucose uses the range for its moment. A temperature above 37.5 °C opens the fever path until a doctor call is logged or a normal temperature is recorded.
 - **Legacy data:** old `vitals` rows are copied into `vital_readings`; vela-web's `medication_plans` become schedules with the same id (their administered doses come along); any other `medications` row becomes a one-day schedule. The old tables are left untouched for vela-web, and re-running `0003` picks up rows written since.
-- **Offline:** writes made without a connection go to an outbox on the phone (`src/lib/db.ts`, through `mutate()`), a dark banner says so with the pending count, and the queue is sent in order when the connection returns ("Conexión recuperada. Se enviaron N registros."). Undo while offline takes the write back out. Reads keep showing the last data loaded in this session.
+- **Offline:** writes made without a connection go to an outbox on the phone (`src/lib/db.ts`, through `mutate()`), a dark banner says so with the pending count, and the queue is sent in order when the connection returns ("Conexión recuperada. Se enviaron N registros."). Undo while offline takes the write back out. Lists show what was saved offline right away, marked "Pendiente de enviar" (`mergePending` in `useLiveList`), and otherwise keep the last data loaded in this session. Inserts carry a client id, so a resend after a lost response never doubles a row (`0004` adds one reading per vital per control as a database rule too).
 - **Shared project with vela-web:** `0003` is written to run before or after vela-web's own migrations (`0003_lazo` … `0006_medication_plans`) — it reuses their `patients.allergies text[]` and `care_team()`, and opens no table wider than vela-web expects.
 
 Not done yet (see [Roadmap](#roadmap)): push reminders and the server-side "sin registrar" job (need the EAS dev build).
@@ -120,7 +120,7 @@ src/
   features/settings/    text size
   lib/                  supabase client, env, mutate/invalidate, device prefs
 supabase/
-  migrations/           0001_schema, 0002_rls, 0003_care_features
+  migrations/           0001_schema, 0002_rls, 0003_care_features, 0004_vital_readings_unique
   functions/            delete-account Edge Function
 __tests__/              unit + screen tests
 docs/superpowers/       earlier specs and plans (written under the Vela name)
