@@ -13,7 +13,7 @@ import { shiftKind, shiftLabel } from '@/features/care/shifts';
 import { parseTimes } from '@/features/care/doses';
 import { generateInviteCode } from '@/features/auth/invite';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { mutate, saved } from '@/lib/db';
 import { colors } from '@/theme';
 
 const TIME_ERROR = 'Escribe una hora, por ejemplo 22:00.';
@@ -74,7 +74,7 @@ export default function NursePerfil() {
     setSaving(false);
     if (err) return Alert.alert('No se pudo guardar', err);
     setEditing(false);
-    toast.show('Turno guardado.');
+    toast.show(saved('Turno guardado.'));
   }
 
   function submitShift() {

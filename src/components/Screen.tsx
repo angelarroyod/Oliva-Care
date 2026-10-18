@@ -4,11 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '@/theme';
 import { ToastHost } from './Toast';
+import { OfflineBanner } from './Offline';
 import { H1, T } from './T';
 import { BackButton } from './Button';
 
 // Full-screen wrapper: system status bar, safe areas, scrollable content
-// (padding 8/20/28, vertical rhythm via gap) and the toast host. Pass
+// (padding 8/20/28, vertical rhythm via gap), the offline banner and the toast host. Pass
 // scroll={false} for screens that lay out their own scroll (chat), and
 // bottomInset={false} inside a tab navigator (the tab bar covers the bottom
 // inset) or when the screen pads its own bottom edge.
@@ -34,6 +35,7 @@ export function Screen({
   return (
     <View style={[s.root, { backgroundColor: bg, paddingTop: top, paddingBottom: bottom }]}>
       <StatusBar style="dark" />
+      <OfflineBanner />
       {scroll ? (
         <ScrollView
           style={s.flex}

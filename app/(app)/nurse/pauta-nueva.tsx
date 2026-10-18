@@ -12,7 +12,7 @@ import { parseTimes } from '@/features/care/doses';
 import { addDays, atTime, localDate } from '@/features/care/clock';
 import type { ReminderMode } from '@/features/care/types';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { mutate, saved } from '@/lib/db';
 
 const PRESETS = [
   { label: '1 al día', times: '09:00' },
@@ -70,7 +70,7 @@ export default function PautaNueva() {
     if (err) return Alert.alert('No se pudo guardar', err);
     router.back();
     const next = times.find((t) => atTime(now, t).getTime() >= now.getTime());
-    toast.show(`${name.trim()} añadido.${next ? ` Próxima dosis hoy a las ${next}.` : ''}`);
+    toast.show(saved(`${name.trim()} añadido.${next ? ` Próxima dosis hoy a las ${next}.` : ''}`));
   };
 
   return (

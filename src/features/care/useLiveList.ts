@@ -34,9 +34,10 @@ export function useLiveList<Row, T>(
     const fetchRows = () => {
       let q = supabase.from(table).select(select).eq('patient_id', patientId);
       if (sinceCol && sinceVal) q = q.gte(sinceCol, sinceVal);
-      return q.order(order.col, { ascending: order.asc }).then(({ data }) => {
-        // a runtime select string defeats supabase's row typing
-        if (active) setRows(((data ?? []) as unknown as Row[]).map(map));
+      return q.order(order.col, { ascending: order.asc }).then(({ data, error }) => {
+        // Offline the fetch fails: keep showing the last rows instead of "nothing".
+        // A runtime select string defeats supabase's row typing.
+        if (active && !error) setRows(((data ?? []) as unknown as Row[]).map(map));
       });
     };
 

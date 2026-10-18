@@ -18,7 +18,7 @@ import { onShift, reminderTime, shiftStart } from '@/features/care/shifts';
 import { MINUTE, addDays, firstName, fromMin, hhmm, lc, listY, localDate, longDate, minutesBetween, shortTime, toMin } from '@/features/care/clock';
 import type { ScheduleRow, SkipReason } from '@/features/care/types';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
 import { colors, radius } from '@/theme';
 
 type Look = {
@@ -168,7 +168,8 @@ export default function NurseMedicacion() {
       'medication_doses',
     );
     setBusy(false);
-    if (!err) toast.show(msg, undo(d));
+    const queued = lastQueued();
+    if (!err) toast.show(saved(msg), () => (unqueue(queued) ? undefined : undo(d)()));
     return err;
   };
 

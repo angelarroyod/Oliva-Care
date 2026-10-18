@@ -18,7 +18,7 @@ import { hhmm, lc, listY, num, relativeDay } from '@/features/care/clock';
 import type { ConditionKind, ConditionRow, VitalKind, VitalPlanRow } from '@/features/care/types';
 import { useTextScale } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { mutate, saved } from '@/lib/db';
 import { colors, font, radius } from '@/theme';
 
 type SheetState = null | { t: 'cond' } | { t: 'sugg'; c: ConditionKind; sel: VitalKind[] };
@@ -84,7 +84,7 @@ export default function PlanScreen() {
     setBusy(false);
     if (err) return Alert.alert('No se pudo guardar', err);
     setEdit(null);
-    toast.show(`Rango de ${lc(VITALS[k].short)} guardado. El formulario de signos ya lo usa.`);
+    toast.show(saved(`Rango de ${lc(VITALS[k].short)} guardado. El formulario de signos ya lo usa.`));
   };
 
   const addCondition = async (c: ConditionKind, sel: VitalKind[]) => {
@@ -109,7 +109,7 @@ export default function PlanScreen() {
     const name = CONDITIONS[c].name;
     const asked = added.filter((sg) => sg.inRoutine).map((sg) => lc(VITALS[sg.kind].name));
     const tail = asked.length ? ` El formulario de signos ya pide ${listY(asked)}.` : added.length ? ' Nuevos signos en su plan.' : '';
-    toast.show(`${name} añadida.${tail}`, async () => {
+    toast.show(saved(`${name} añadida.${tail}`), async () => {
       const restored = upserts.filter((e) => prev[e.kind]).map((e) => restoreRow(pid, prev[e.kind]!));
       const inserted = upserts.filter((e) => !prev[e.kind]).map((e) => e.kind);
       let undoErr = await mutate(

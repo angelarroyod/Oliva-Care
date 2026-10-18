@@ -14,7 +14,7 @@ import { reminderRows, shiftLabel } from '@/features/care/shifts';
 import { cap, listY, shortTime } from '@/features/care/clock';
 import type { ReminderMode } from '@/features/care/types';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { mutate, saved } from '@/lib/db';
 import { colors, radius } from '@/theme';
 
 export default function NurseAviso() {
@@ -56,9 +56,11 @@ export default function NurseAviso() {
     router.back();
     const at = rows.map((r) => r.time);
     toast.show(
-      rows.length === 1 && rows[0].nurse
-        ? `Aviso guardado. Sonará a las ${at[0]} y le llegará a ${rows[0].nurse.short}.`
-        : `Aviso guardado. Sonará a las ${listY(at)}, a quien esté de turno.`,
+      saved(
+        rows.length === 1 && rows[0].nurse
+          ? `Aviso guardado. Sonará a las ${at[0]} y le llegará a ${rows[0].nurse.short}.`
+          : `Aviso guardado. Sonará a las ${listY(at)}, a quien esté de turno.`,
+      ),
     );
   };
 
@@ -78,7 +80,7 @@ export default function NurseAviso() {
     if (err) return Alert.alert('No se pudo guardar', err);
     setStopping(false);
     router.back();
-    toast.show(`${sc.name}: ya no se dará.`);
+    toast.show(saved(`${sc.name}: ya no se dará.`));
   };
 
   return (

@@ -5,18 +5,20 @@ import { Screen } from '@/components/Screen';
 import { T, H1 } from '@/components/T';
 import { Icon } from '@/components/Icon';
 import { Avatar, initialsOf } from '@/components/Avatar';
+import { useToast } from '@/components/Toast';
 import { useTextScale } from '@/features/settings/textScale';
 import { useCare, useMessages, type Message } from '@/features/care/hooks';
 import { firstName, hhmm } from '@/features/care/clock';
 import { onShift, shiftKind } from '@/features/care/shifts';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { SAVED_OFFLINE, lastQueued, mutate } from '@/lib/db';
 
 // Family · Mensajes: chat with the nurse on shift.
 export default function Mensajes() {
   const { pid, meId, nurses, names, now } = useCare();
   const messages = useMessages(pid, meId);
   const { pct } = useTextScale();
+  const toast = useToast();
   const [draft, setDraft] = useState('');
   const list = useRef<ScrollView>(null);
 
@@ -45,6 +47,8 @@ export default function Mensajes() {
     if (err) {
       setDraft(body);
       Alert.alert('No se pudo enviar', err);
+    } else if (lastQueued()) {
+      toast.show(SAVED_OFFLINE); // it shows up in the chat once it's sent
     }
   };
 

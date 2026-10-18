@@ -93,9 +93,10 @@ How it behaves:
 - **Who gets a reminder** is whoever is on shift when it fires; a nurse without a fixed shift covers the gaps.
 - **Severity:** *warn* outside the patient's normal range, *alert* outside the alert band; blood pressure takes the worse of systolic and diastolic; glucose uses the range for its moment. A temperature above 37.5 °C opens the fever path until a doctor call is logged or a normal temperature is recorded.
 - **Legacy data:** old `vitals` rows are copied into `vital_readings`; vela-web's `medication_plans` become schedules with the same id (their administered doses come along); any other `medications` row becomes a one-day schedule. The old tables are left untouched for vela-web, and re-running `0003` picks up rows written since.
+- **Offline:** writes made without a connection go to an outbox on the phone (`src/lib/db.ts`, through `mutate()`), a dark banner says so with the pending count, and the queue is sent in order when the connection returns ("Conexión recuperada. Se enviaron N registros."). Undo while offline takes the write back out. Reads keep showing the last data loaded in this session.
 - **Shared project with vela-web:** `0003` is written to run before or after vela-web's own migrations (`0003_lazo` … `0006_medication_plans`) — it reuses their `patients.allergies text[]` and `care_team()`, and opens no table wider than vela-web expects.
 
-Not done yet (see [Roadmap](#roadmap)): push reminders and the server-side "sin registrar" job (need the EAS dev build), offline outbox.
+Not done yet (see [Roadmap](#roadmap)): push reminders and the server-side "sin registrar" job (need the EAS dev build).
 
 ## Project layout
 
@@ -142,4 +143,4 @@ vela-web has its own redesign (Lazo) and still writes the legacy `vitals` / `med
 - **M3 — Live data** ✅ screens on Supabase with realtime sync (family ⇄ nurse).
 - **M4 — Polish (lean)** ✅ write-error handling, accessibility labels, privacy + medical-disclaimer screen.
 - **M5 — Tend** ✅ rename, accessible redesign, the six care features, schedules, shifts, new schema, app icons.
-- **Next:** offline outbox (queue writes, offline banner, flush on reconnect) · push reminders + server "sin registrar" job (EAS dev build, Apple enrollment) · port vela-web to Tend · release prep (EAS builds, TestFlight, store metadata).
+- **Next:** push reminders + server "sin registrar" job (EAS dev build, Apple enrollment) · port vela-web to Tend · release prep (EAS builds, TestFlight, store metadata).

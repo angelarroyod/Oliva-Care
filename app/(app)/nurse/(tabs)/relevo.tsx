@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
+import { randomUUID } from 'expo-crypto';
 import { Screen, PageHeader } from '@/components/Screen';
 import { T, H2 } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -13,7 +14,7 @@ import { feverState } from '@/features/care/timeline';
 import { dosesSpan, handoffBrief, myHandoff, shiftLog } from '@/features/care/nextUp';
 import { cap, hhmm } from '@/features/care/clock';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
 import { colors, radius } from '@/theme';
 
 const TWO_HOURS = 2 * 3_600_000;
@@ -51,27 +52,20 @@ export default function NurseRelevo() {
   async function handOff() {
     if (!pid || busy) return;
     setBusy(true);
-    let id = null as string | null;
+    const id = randomUUID(); // known before the insert, so undo works offline too
     const err = await mutate(
-      supabase
-        .from('shift_handoffs')
-        .insert({
-          patient_id: pid, nurse_id: meId, summary: brief.record, recommendation: brief.para.join('\n'),
-          started_at: start.toISOString(), ended_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-        .then((r) => {
-          id = r.data?.id ?? null;
-          return r;
-        }),
+      supabase.from('shift_handoffs').insert({
+        id, patient_id: pid, nurse_id: meId, summary: brief.record, recommendation: brief.para.join('\n'),
+        started_at: start.toISOString(), ended_at: new Date().toISOString(),
+      }),
       'shift_handoffs',
     );
     setBusy(false);
     setSheet(false);
     if (err) return Alert.alert('No se pudo guardar', err);
-    toast.show(`Turno entregado${next ? ` a ${next.short}` : ''}.`, async () => {
-      if (!id) return;
+    const queued = lastQueued();
+    toast.show(saved(`Turno entregado${next ? ` a ${next.short}` : ''}.`), async () => {
+      if (unqueue(queued)) return;
       const e = await mutate(supabase.from('shift_handoffs').delete().eq('id', id), 'shift_handoffs');
       if (e) Alert.alert('No se pudo deshacer', e);
     });

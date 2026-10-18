@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import { ToastProvider } from '@/components/Toast';
 import Signos from '../app/(app)/nurse/(tabs)/signos';
 import type { VitalPlanRow } from '@/features/care/types';
+import { outboxSnapshot, setOnline } from '@/lib/db';
 
 // Thursday 15 October 2026, 23:40 local → glucose moment defaults to "Al acostarse".
 const mockNow = new Date(2026, 9, 15, 23, 40);
@@ -152,4 +153,28 @@ test('notify on → family_notified and the family toast', async () => {
   fireEvent.press(screen.getByText('Guardar y avisar a la familia'));
   expect(await screen.findByText('Control guardado. La familia ha sido avisada.')).toBeTruthy();
   expect(mockInsert.mock.calls[0][0][0]).toMatchObject({ kind: 'hr', value: 72, family_notified: true, note: null });
+});
+
+test('offline: the control is kept on the phone, and undo takes it back out', async () => {
+  // what supabase-js hands mutate(): a request that hasn't run yet
+  mockInsert.mockImplementationOnce((rows: unknown) => ({
+    method: 'POST', url: new URL('https://x.test/rest/v1/vital_readings'), headers: new Headers(), body: rows,
+    then: () => { throw new Error('sent while offline'); },
+  }));
+  setOnline(false);
+  try {
+    ui();
+    type('Pulso', '72');
+    fireEvent.press(screen.getByText('Guardar 1 signo'));
+    expect(await screen.findByText('Guardado en el teléfono. Se enviará al volver la conexión.')).toBeTruthy();
+    expect(outboxSnapshot().pending).toBe(1);
+
+    fireEvent.press(screen.getByText('Deshacer'));
+    await waitFor(() => expect(mockRouter.navigate).toHaveBeenCalledWith('/nurse/signos'));
+    expect(outboxSnapshot().pending).toBe(0);
+    expect(mockDeleteEq).not.toHaveBeenCalled(); // nothing reached the server, nothing to delete
+    expect(screen.getByLabelText('Pulso').props.value).toBe('72');
+  } finally {
+    setOnline(true);
+  }
 });

@@ -19,7 +19,7 @@ import { hhmm, lc, num } from '@/features/care/clock';
 import type { GlucoseCtx, VitalKind } from '@/features/care/types';
 import { useTextScale } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
 import { colors, font, radius } from '@/theme';
 
 // Message line look per state (prototype MS table).
@@ -94,14 +94,17 @@ export default function NurseSignos() {
       return;
     }
     const prev = draft;
+    const queued = lastQueued();
     setFailed(false);
     setDraft(EMPTY_DRAFT);
     router.navigate('/nurse/inicio');
-    toast.show(notifyOn ? 'Control guardado. La familia ha sido avisada.' : 'Control guardado.', async () => {
-      const undoErr = await mutate(supabase.from('vital_readings').delete().eq('control_id', controlId), 'vital_readings');
-      if (undoErr) {
-        Alert.alert('No se pudo deshacer', undoErr);
-        return;
+    toast.show(saved(notifyOn ? 'Control guardado. La familia ha sido avisada.' : 'Control guardado.'), async () => {
+      if (!unqueue(queued)) {
+        const undoErr = await mutate(supabase.from('vital_readings').delete().eq('control_id', controlId), 'vital_readings');
+        if (undoErr) {
+          Alert.alert('No se pudo deshacer', undoErr);
+          return;
+        }
       }
       setDraft(prev);
       router.navigate('/nurse/signos');

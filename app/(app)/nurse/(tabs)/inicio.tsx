@@ -19,7 +19,7 @@ import { feverState } from '@/features/care/timeline';
 import { dosesSpan, doctorRef, feverText, heroNext, myHandoff } from '@/features/care/nextUp';
 import { firstName, greeting, hhmm, lc, listY } from '@/features/care/clock';
 import { supabase } from '@/lib/supabase';
-import { mutate } from '@/lib/db';
+import { mutate, saved } from '@/lib/db';
 import { colors, radius } from '@/theme';
 
 export default function NurseInicio() {
@@ -67,7 +67,7 @@ export default function NurseInicio() {
     if (err) return Alert.alert('No se pudo guardar', err);
     // ponytail: no phone numbers are stored yet, so this only opens the dialer. Store the doctor's phone to dial it directly.
     Linking.openURL('tel:').catch(() => {});
-    toast.show(`Llamando ${doctorRef(doctor)}… Queda anotado que avisaste al médico.`);
+    toast.show(saved(`Llamando ${doctorRef(doctor)}… Queda anotado que avisaste al médico.`));
   }
 
   const heroGo = {

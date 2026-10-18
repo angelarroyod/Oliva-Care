@@ -54,8 +54,9 @@ jest.mock('@/features/care/hooks', () => ({
   useHandoffs: () => mockHandoffs,
 }));
 
-let mockInsertResult: { data: { id: string } | null; error: { message: string } | null } = { data: { id: 'h-new' }, error: null };
-const mockInsert = jest.fn((_row: unknown) => ({ select: () => ({ single: () => Promise.resolve(mockInsertResult) }) }));
+let mockInsertResult: { error: { message: string } | null } = { error: null };
+const mockInsert = jest.fn((_row: unknown) => Promise.resolve(mockInsertResult));
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'h-new' }));
 const mockDeleteEq = jest.fn((_col: string, _id: string) => Promise.resolve({ error: null }));
 jest.mock('@/lib/supabase', () => ({
   supabase: { from: () => ({ insert: mockInsert, delete: () => ({ eq: mockDeleteEq }) }) },
@@ -70,7 +71,7 @@ beforeEach(() => {
     { id: 'n1', patient_id: 'p1', author_id: 'c', type: 'note', title: 'A vigilar', body: 'Tos seca de vez en cuando.', severity: 'warning', occurred_at: iso(mockAt(15, 22, 30)) },
   ];
   mockHandoffs = [rosaHandoff];
-  mockInsertResult = { data: { id: 'h-new' }, error: null };
+  mockInsertResult = { error: null };
 });
 
 const renderRelevo = () => render(<ToastProvider><Relevo /></ToastProvider>);
@@ -110,6 +111,7 @@ test('handing off saves the handoff and can be undone', async () => {
   await waitFor(() => expect(screen.getByText('Turno entregado a Rosa.')).toBeTruthy());
   expect(mockInsert).toHaveBeenCalledWith(
     expect.objectContaining({
+      id: 'h-new', // client id: undo works before the insert ever reaches the server
       patient_id: 'p1',
       nurse_id: 'c',
       summary: 'Turno tranquilo por ahora. Hay 1 cosa a vigilar. A las 22:30: Tos seca de vez en cuando.',
@@ -124,7 +126,7 @@ test('handing off saves the handoff and can be undone', async () => {
 
 test('a failed save is written out', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  mockInsertResult = { data: null, error: { message: 'sin conexión' } };
+  mockInsertResult = { error: { message: 'sin conexión' } };
   renderRelevo();
   fireEvent.press(screen.getByText('Entregar turno a Rosa'));
   fireEvent.press(screen.getByText('Sí, entregar turno'));
