@@ -16,3 +16,4 @@ test('returns null when there are no memberships', () => {
 test('falls back to the first membership when no nurse role', () => {
   expect(pickActiveMembership([{ role: 'family', patient_id: 'p' }])).toEqual({ role: 'family', patient_id: 'p' });
 });
+

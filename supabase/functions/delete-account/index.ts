@@ -1,4 +1,4 @@
-// Vela — account deletion (App Store Guideline 5.1.1(v)).
+// Tend — account deletion (App Store Guideline 5.1.1(v)).
 // Deploy: supabase functions deploy delete-account
 // Secret: supabase secrets set SUPABASE_SERVICE_ROLE_KEY=... (service role never ships in the app)
 import { createClient } from 'jsr:@supabase/supabase-js@2';

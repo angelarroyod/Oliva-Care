@@ -1,5 +1,7 @@
 # Vela — Recurring medication plans (design spec)
 
+> **Superseded (2026-10-15)** by the Tend redesign: `medication_plans` became `medication_schedules` + `medication_doses` in `supabase/migrations/0003_care_features.sql`. The "Nueva pauta" screen survives as "Añadir medicamento" (`app/(app)/nurse/pauta-nueva.tsx`); suspending a plan is "Dejar de dar este medicamento" on its Aviso screen.
+
 **Date:** 2026-10-01
 **Repos:** `vela` (Expo mobile) + `vela-web` (Vite web) — shared Supabase backend.
 **Goal:** Let the nurse define a recurring medication plan (*pauta*: drug + fixed times of day + duration) so doses appear on their own each day, are recorded by the nurse, and are followed live by the family — today plus 7 days of adherence history.

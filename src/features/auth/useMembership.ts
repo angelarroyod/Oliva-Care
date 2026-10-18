@@ -12,27 +12,27 @@ export function pickActiveMembership(rows: Membership[]): Membership | null {
 
 export function useMembership() {
   const { session } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [membership, setMembership] = useState<Membership | null>(null);
+  const uid = session?.user.id;
+  const [state, setState] = useState<{ uid: string | undefined; membership: Membership | null } | null>(null);
 
+  // Keyed on the user, not the session object: a token refresh hands out a new
+  // session every hour and must not reload (and unmount) the signed-in app.
   useEffect(() => {
     let active = true;
-    if (!session) {
-      setMembership(null);
-      setLoading(false);
+    if (!uid) {
+      setState({ uid, membership: null });
       return;
     }
-    setLoading(true);
     supabase
       .from('care_memberships')
       .select('role, patient_id')
+      .eq('profile_id', uid) // own rows only: members can also read the care team
       .then(({ data }) => {
-        if (!active) return;
-        setMembership(pickActiveMembership((data as Membership[]) ?? []));
-        setLoading(false);
+        if (active) setState({ uid, membership: pickActiveMembership((data as Membership[]) ?? []) });
       });
     return () => { active = false; };
-  }, [session]);
+  }, [uid]);
 
-  return { loading, membership };
+  const current = state?.uid === uid ? state : null;
+  return { loading: current === null, membership: current?.membership ?? null };
 }

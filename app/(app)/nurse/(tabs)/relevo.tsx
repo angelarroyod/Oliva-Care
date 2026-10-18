@@ -1,115 +1,198 @@
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Screen } from '@/components/Screen';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { useState } from 'react';
+import { View, StyleSheet, Alert } from 'react-native';
+import { Screen, PageHeader } from '@/components/Screen';
+import { T, H2 } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { colors, fontFamilyForWeight } from '@/theme';
-import { recommendation, type TimelineEntry } from '@/data';
-import { useAuth } from '@/features/auth/useAuth';
-import { useMembership } from '@/features/auth/useMembership';
-import { useTimeline } from '@/features/care/hooks';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Sheet } from '@/components/Sheet';
+import { useToast } from '@/components/Toast';
+import { useCare, useSince, useSchedules, useDoseRows, useReadings, useEvents, useHandoffs } from '@/features/care/hooks';
+import { nextNurse, shiftEnd, shiftKind, shiftStart } from '@/features/care/shifts';
+import { feverState } from '@/features/care/timeline';
+import { dosesSpan, handoffBrief, myHandoff, shiftLog } from '@/features/care/nextUp';
+import { cap, hhmm } from '@/features/care/clock';
 import { supabase } from '@/lib/supabase';
 import { mutate } from '@/lib/db';
+import { colors, radius } from '@/theme';
 
-function Entry({ entry, last }: { entry: TimelineEntry; last: boolean }) {
-  const anomaly = entry.tone === 'anomaly';
-  return (
-    <View style={[s.entry, last && { paddingBottom: 0 }]}>
-      <View style={[s.dot, { backgroundColor: anomaly ? colors.anomalyDot : colors.primary }]} />
-      {anomaly ? (
-        <View style={s.anomalyCard}>
-          <View style={s.row}>
-            <Text style={s.anomalyTitle}>{entry.title}</Text>
-            <Text style={s.anomalyTime}>{entry.time}</Text>
-          </View>
-          <Text style={s.anomalyBody}>{entry.body}</Text>
-        </View>
-      ) : (
-        <View style={{ flex: 1 }}>
-          <View style={s.row}>
-            <Text style={s.entryTitle}>{entry.title}</Text>
-            <Text style={s.entryTime}>{entry.time}</Text>
-          </View>
-          <Text style={s.entryBody}>{entry.body}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
+const TWO_HOURS = 2 * 3_600_000;
 
 export default function NurseRelevo() {
-  const router = useRouter();
-  const { session } = useAuth();
-  const { membership } = useMembership();
-  const timeline = useTimeline(membership?.patient_id);
-  const handover = () => {
-    Alert.alert('Entregar turno', '¿Entregar el turno al equipo de día?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Entregar',
-        onPress: async () => {
-          if (membership) {
-            const err = await mutate(supabase.from('shift_handoffs').insert({
-              patient_id: membership.patient_id, nurse_id: session?.user.id,
-              summary: 'Turno sin novedades relevantes.', recommendation, ended_at: new Date().toISOString(),
-            }));
-            if (err) { Alert.alert('No se pudo entregar el turno', err); return; }
-          }
-          router.replace('/nurse/inicio');
-        },
-      },
-    ]);
-  };
+  const toast = useToast();
+  const { pid, meId, meNurse, nurses, names, now } = useCare();
+  const since = useSince(1); // a night shift started yesterday
+  const schedules = useSchedules(pid);
+  const rows = useDoseRows(pid, since);
+  const readings = useReadings(pid, since);
+  const events = useEvents(pid, since);
+  const handoffs = useHandoffs(pid, since);
+  const [sheet, setSheet] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const kind = meNurse ? shiftKind(meNurse) : null;
+  const start = shiftStart(meNurse, now);
+  const end = shiftEnd(meNurse, now);
+  const next = nextNurse(nurses, meId);
+  const nextKind = next ? shiftKind(next) : null;
+  const fever = feverState(readings, events, now);
+  // Through 2 h after my shift ends: the next nurse's first doses go in "Para …".
+  const doses = dosesSpan(schedules, rows, start, new Date((end ?? now).getTime() + TWO_HOURS), now);
+  const brief = handoffBrief({ now, start, end, fever, doses, readings, events });
+  const log = shiftLog({ now, start, meId, doses, readings, events, handoffs, names, nurses });
+  const handed = myHandoff(handoffs, meId, start);
+
+  const sub = [
+    kind && meNurse ? `${cap(kind)} de ${meNurse.start} a ${meNurse.end}` : 'Sin turno fijo',
+    next ? `para ${next.short}${nextKind ? ` (turno de ${nextKind})` : ''}` : '',
+  ].filter(Boolean).join(' · ');
+  const tasks = brief.para.length;
+
+  async function handOff() {
+    if (!pid || busy) return;
+    setBusy(true);
+    let id = null as string | null;
+    const err = await mutate(
+      supabase
+        .from('shift_handoffs')
+        .insert({
+          patient_id: pid, nurse_id: meId, summary: brief.record, recommendation: brief.para.join('\n'),
+          started_at: start.toISOString(), ended_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single()
+        .then((r) => {
+          id = r.data?.id ?? null;
+          return r;
+        }),
+      'shift_handoffs',
+    );
+    setBusy(false);
+    setSheet(false);
+    if (err) return Alert.alert('No se pudo guardar', err);
+    toast.show(`Turno entregado${next ? ` a ${next.short}` : ''}.`, async () => {
+      if (!id) return;
+      const e = await mutate(supabase.from('shift_handoffs').delete().eq('id', id), 'shift_handoffs');
+      if (e) Alert.alert('No se pudo deshacer', e);
+    });
+  }
+
   return (
-    <Screen time="05:48" bg={colors.appBg}>
-      <View style={s.header}>
-        <Text style={s.title}>Relevo de turno</Text>
-        <Text style={s.sub}>Resumen · 22:00 – 06:00</Text>
+    <Screen bottomInset={false}>
+      <PageHeader title="Relevo de turno" sub={sub} />
+
+      {handed ? (
+        <View style={s.done}>
+          <View style={s.doneIcon}>
+            <Icon name="check" size={16} color={colors.white} strokeWidth={2.8} />
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <T size={17} bold color={colors.pri}>
+              {`Turno entregado${next ? ` a ${next.short}` : ''} a las ${hhmm(new Date(handed.ended_at ?? handed.started_at ?? now))}`}
+            </T>
+            <T size={15}>{`${next ? next.short : 'El equipo'} y la familia ya pueden ver este resumen.`}</T>
+          </View>
+        </View>
+      ) : null}
+
+      <Card gap={6}>
+        <Eyebrow color={colors.ink2}>RESUMEN</Eyebrow>
+        <T size={19} bold lh={1.35}>{brief.summary}</T>
+      </Card>
+
+      {brief.watch.length ? (
+        <Card tone="warn" gap={6}>
+          <View style={s.watchHead}>
+            <Icon name="warn" size={18} color={colors.warnInk} strokeWidth={2.4} />
+            <Eyebrow color={colors.warnInk}>A VIGILAR</Eyebrow>
+          </View>
+          {brief.watch.map((w, i) => (
+            <T key={i} size={17} bold color={colors.warnInk}>{w.text}</T>
+          ))}
+        </Card>
+      ) : null}
+
+      <Card gap={10}>
+        <Eyebrow color={colors.ink2}>{`PARA ${next ? next.short.toUpperCase() : 'EL SIGUIENTE TURNO'}`}</Eyebrow>
+        {brief.para.map((p, i) => (
+          <View key={i} style={s.bullet}>
+            <View style={s.dot} />
+            <T size={16} style={{ flex: 1 }}>{p}</T>
+          </View>
+        ))}
+      </Card>
+
+      <View style={{ gap: 10 }}>
+        <H2>Lo que va de turno</H2>
+        {log.length ? (
+          <View style={s.timeline}>
+            {log.map((e) => (
+              <View key={e.id} style={s.item}>
+                <View style={[s.tlDot, { backgroundColor: e.warn ? colors.warn : colors.pri }]} />
+                <View style={s.itemHead}>
+                  <T size={16} bold style={{ flex: 1 }}>{e.title}</T>
+                  <T size={16} bold color={colors.ink2} style={s.num}>{e.time}</T>
+                </View>
+                {e.body ? <T size={15} color={colors.ink2} style={{ marginTop: 2 }}>{e.body}</T> : null}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={s.empty}>
+            <T size={16} color={colors.ink2} lh={1.45}>
+              Aún no hay nada anotado en este turno. Lo que registres aparecerá aquí.
+            </T>
+          </View>
+        )}
       </View>
-      <ScrollView contentContainerStyle={s.content}>
-        <View style={s.timeline}>
-          <View style={s.line} />
-          {timeline.map((e, i) => (
-            <Entry key={i} entry={e} last={i === timeline.length - 1} />
+
+      {handed ? null : (
+        <Button label={`Entregar turno${next ? ` a ${next.short}` : ''}`} onPress={() => setSheet(true)} disabled={!pid} />
+      )}
+
+      <Sheet visible={sheet} title={`¿Entregar el turno${next ? ` a ${next.short}` : ''}?`} onClose={() => setSheet(false)}>
+        <View style={{ gap: 8 }}>
+          {[
+            'Resumen del turno',
+            brief.watchLine,
+            `${tasks} ${tasks === 1 ? 'tarea' : 'tareas'} para el ${nextKind ? `turno de ${nextKind}` : 'siguiente turno'}`,
+            'La familia verá el resumen',
+          ].map((it) => (
+            <View key={it} style={s.sheetItem}>
+              <T size={16} accessibilityElementsHidden importantForAccessibility="no">•</T>
+              <T size={16} style={{ flex: 1 }}>{it}</T>
+            </View>
           ))}
         </View>
-
-        <View style={s.recCard}>
-          <View style={s.recHead}>
-            <Icon name="bulb" size={17} color={colors.primary} strokeWidth={2} />
-            <Text style={s.recTitle}>Recomendación para el día</Text>
-          </View>
-          <Text style={s.recBody}>{recommendation}</Text>
-        </View>
-
-        <View style={s.ctaWrap}>
-          <PrimaryButton label="Entregar turno al equipo de día" onPress={handover} />
-        </View>
-      </ScrollView>
+        <Button label="Sí, entregar turno" onPress={handOff} disabled={busy} />
+      </Sheet>
     </Screen>
   );
 }
 
+// 14px bold spaced caps section label (an h2 for screen readers).
+function Eyebrow({ children, color }: { children: string; color: string }) {
+  return (
+    <T size={14} bold color={color} accessibilityRole="header" style={{ letterSpacing: 14 * 0.06 }}>
+      {children}
+    </T>
+  );
+}
+
 const s = StyleSheet.create({
-  header: { paddingHorizontal: 22, paddingTop: 4, paddingBottom: 14 },
-  title: { fontFamily: fontFamilyForWeight(700), fontSize: 20, color: colors.ink },
-  sub: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.muted2, marginTop: 2 },
-  content: { paddingHorizontal: 22, flexGrow: 1, paddingBottom: 14 },
-  timeline: { position: 'relative', paddingLeft: 8 },
-  line: { position: 'absolute', left: 14, top: 6, bottom: 6, width: 2, backgroundColor: colors.timeline },
-  entry: { flexDirection: 'row', gap: 14, paddingBottom: 16 },
-  dot: { width: 14, height: 14, borderRadius: 999, borderWidth: 3, borderColor: colors.appBg, marginTop: 2 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  entryTitle: { fontFamily: fontFamilyForWeight(700), fontSize: 14, color: colors.ink },
-  entryTime: { fontFamily: fontFamilyForWeight(600), fontSize: 12, color: colors.muted2 },
-  entryBody: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.muted, marginTop: 2 },
-  anomalyCard: { flex: 1, backgroundColor: colors.anomalyBg, borderWidth: 1, borderColor: colors.anomalyBorder, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13 },
-  anomalyTitle: { fontFamily: fontFamilyForWeight(700), fontSize: 14, color: colors.amberText },
-  anomalyTime: { fontFamily: fontFamilyForWeight(600), fontSize: 12, color: colors.amberTs },
-  anomalyBody: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.amberBody, marginTop: 3, lineHeight: 19 },
-  recCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 16 },
-  recHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  recTitle: { fontFamily: fontFamilyForWeight(700), fontSize: 13, color: colors.primaryDeep },
-  recBody: { fontFamily: fontFamilyForWeight(500), fontSize: 14, color: colors.bodyOnCard, lineHeight: 21 },
-  ctaWrap: { marginTop: 'auto', paddingTop: 16 },
+  done: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: radius.card,
+    backgroundColor: colors.priSoft, borderWidth: 2, borderColor: colors.ok,
+  },
+  doneIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.pri, alignItems: 'center', justifyContent: 'center' },
+  watchHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.pri, marginTop: 8 },
+  timeline: { borderLeftWidth: 2, borderLeftColor: colors.line, marginLeft: 6 },
+  item: { paddingLeft: 20, paddingBottom: 16 },
+  tlDot: { position: 'absolute', left: -8, top: 4, width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: colors.bg },
+  itemHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  num: { fontVariant: ['tabular-nums'] },
+  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card },
+  sheetItem: { flexDirection: 'row', gap: 10, paddingLeft: 4 },
 });

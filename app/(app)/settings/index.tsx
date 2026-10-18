@@ -1,86 +1,130 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen } from '@/components/Screen';
-import { Card } from '@/components/Card';
-import { Icon } from '@/components/Icon';
+import { Screen, PageHeader } from '@/components/Screen';
+import { Button } from '@/components/Button';
+import { Card, RowLink } from '@/components/Card';
+import { Notice } from '@/components/Status';
+import { Sheet } from '@/components/Sheet';
+import { H2, T } from '@/components/T';
 import { useAuth } from '@/features/auth/useAuth';
+import { useCare } from '@/features/care/hooks';
+import { useTextScale, MIN_SCALE, MAX_SCALE } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
-import { colors, fontFamilyForWeight } from '@/theme';
+import { colors, radius } from '@/theme';
+
+// A− / A+: fixed-size glyphs in the prototype, so undo the text scale T applies.
+function ScaleButton({ glyph, size, label, disabled, onPress }: {
+  glyph: string; size: number; label: string; disabled: boolean; onPress: () => void;
+}) {
+  const { pct } = useTextScale();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      style={[s.scaleBtn, disabled && { opacity: 0.4 }]}
+    >
+      <T size={(size * 100) / pct} bold lh={1.1}>{glyph}</T>
+    </Pressable>
+  );
+}
 
 export default function Settings() {
-  const { session, signOut } = useAuth();
   const router = useRouter();
+  const { session, signOut } = useAuth();
+  const { patient, short } = useCare();
+  const { pct, setPct } = useTextScale();
+  const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [deleteErr, setDeleteErr] = useState(false);
 
-  const doSignOut = async () => {
+  // aria-live in the design: announce on both platforms (accessibilityLiveRegion is Android-only).
+  const scale = (next: number) => {
+    setPct(next);
+    AccessibilityInfo.announceForAccessibility?.(`${next} %`);
+  };
+
+  const leave = async () => {
     await signOut();
     router.replace('/(auth)/welcome');
   };
 
-  const confirmDelete = () => {
-    Alert.alert(
-      'Eliminar cuenta',
-      'Esto borrará tu cuenta y tus datos de forma permanente. No se puede deshacer.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await supabase.functions.invoke('delete-account');
-            if (error) {
-              Alert.alert('Error', 'No se pudo eliminar la cuenta.');
-              return;
-            }
-            await signOut();
-            router.replace('/(auth)/welcome');
-          },
-        },
-      ],
-    );
+  const deleteAccount = async () => {
+    setBusy(true);
+    setDeleteErr(false);
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) {
+      setBusy(false);
+      setDeleteErr(true);
+      return;
+    }
+    setDeleting(false);
+    await leave();
   };
 
   return (
-    <Screen time="9:41" bg={colors.appBg}>
-      <View style={s.header}>
-        <Pressable onPress={() => router.back()} style={s.back} accessibilityRole="button" accessibilityLabel="Volver">
-          <Icon name="chevronLeft" size={20} color={colors.serifHead} strokeWidth={2} />
-        </Pressable>
-        <Text style={s.title}>Configuración</Text>
-      </View>
+    <Screen gap={14}>
+      <PageHeader title="Configuración" size={30} onBack={() => router.back()} backLabel="Volver al perfil" />
 
-      <ScrollView contentContainerStyle={s.content}>
-        <Card style={{ padding: 16 }}>
-          <Text style={s.label}>Cuenta</Text>
-          <Text style={s.email}>{session?.user.email ?? '—'}</Text>
-        </Card>
+      <Card gap={12}>
+        <H2 size={17}>Tamaño del texto</H2>
+        <View style={s.scaleRow}>
+          <ScaleButton glyph="A−" size={18} label="Texto más pequeño" disabled={pct <= MIN_SCALE} onPress={() => scale(pct - 10)} />
+          <T size={22} bold center style={s.flex}>{`${pct} %`}</T>
+          <ScaleButton glyph="A+" size={24} label="Texto más grande" disabled={pct >= MAX_SCALE} onPress={() => scale(pct + 10)} />
+        </View>
+        <T size={16} color={colors.ink2}>Así se verá el texto en toda la app.</T>
+      </Card>
 
-        <Pressable style={s.row} onPress={() => router.push('/(app)/legal')} accessibilityRole="button">
-          <Text style={s.rowTxt}>Privacidad y aviso médico</Text>
-          <Icon name="chevronRight" size={18} color={colors.chevron} strokeWidth={2.4} />
-        </Pressable>
+      <Card gap={4}>
+        <T size={15} color={colors.ink2}>Cuenta</T>
+        <T size={17} bold>{session?.user.email ?? ''}</T>
+      </Card>
 
-        <Pressable style={s.row} onPress={doSignOut} accessibilityRole="button">
-          <Text style={s.rowTxt}>Cerrar sesión</Text>
-          <Icon name="chevronRight" size={18} color={colors.chevron} strokeWidth={2.4} />
-        </Pressable>
+      <RowLink title="Privacidad y aviso médico" onPress={() => router.push('/legal')} />
 
-        <Pressable style={s.deleteRow} onPress={confirmDelete} accessibilityRole="button">
-          <Text style={s.deleteTxt}>Eliminar cuenta</Text>
-        </Pressable>
-      </ScrollView>
+      <Pressable onPress={leave} accessibilityRole="button" style={({ pressed }) => [s.row, pressed && { opacity: 0.85 }]}>
+        <T size={17} bold>Cerrar sesión</T>
+      </Pressable>
+
+      <Button label="Eliminar mi cuenta" variant="dangerOutline" onPress={() => setDeleting(true)} style={s.delete} />
+
+      <Sheet visible={deleting} title="¿Eliminar tu cuenta?" onClose={() => { setDeleting(false); setDeleteErr(false); }}>
+        <View style={s.list}>
+          {[
+            'Se borrarán tu cuenta y tus mensajes.',
+            'No se puede deshacer.',
+            `El cuidado ${patient ? `de ${short}` : 'del paciente'} seguirá para el resto del equipo.`,
+          ].map((it) => (
+            <View key={it} style={s.item}>
+              <T size={16} style={s.bullet} accessibilityElementsHidden importantForAccessibility="no">•</T>
+              <T size={16} style={s.flex}>{it}</T>
+            </View>
+          ))}
+        </View>
+        {deleteErr ? <Notice tone="alert" alert>No se pudo eliminar la cuenta.</Notice> : null}
+        <Button label="Sí, eliminar mi cuenta" variant="danger" onPress={deleteAccount} disabled={busy} />
+      </Sheet>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingTop: 4, paddingBottom: 14 },
-  back: { width: 40, height: 40, borderRadius: 13, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: fontFamilyForWeight(700), fontSize: 20, color: colors.ink },
-  content: { paddingHorizontal: 22, gap: 13, paddingBottom: 16 },
-  label: { fontFamily: fontFamilyForWeight(700), fontSize: 13, color: colors.ink, marginBottom: 6 },
-  email: { fontFamily: fontFamilyForWeight(600), fontSize: 15, color: colors.bodyOnCard },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 16 },
-  rowTxt: { fontFamily: fontFamilyForWeight(700), fontSize: 14, color: colors.ink },
-  deleteRow: { alignItems: 'center', backgroundColor: '#FBEEEA', borderWidth: 1, borderColor: '#F0D5CC', borderRadius: 18, padding: 16, marginTop: 8 },
-  deleteTxt: { fontFamily: fontFamilyForWeight(700), fontSize: 14, color: '#B4452F' },
+  flex: { flex: 1 },
+  scaleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scaleBtn: {
+    width: 56, height: 56, borderRadius: radius.input, borderWidth: 1.5, borderColor: colors.field,
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
+  },
+  row: {
+    minHeight: 64, paddingVertical: 14, paddingHorizontal: 16, justifyContent: 'center',
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card,
+  },
+  delete: { marginTop: 8 },
+  list: { gap: 8 },
+  item: { flexDirection: 'row' },
+  bullet: { width: 20 },
 });
