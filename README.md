@@ -56,7 +56,7 @@ Fill `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from your Su
 npm start
 ```
 
-- **Supabase:** run the SQL files in `supabase/migrations/` in order in the SQL Editor: `0001_schema.sql`, `0002_rls.sql`, `0003_care_features.sql`, `0004_vital_readings_unique.sql`. `0003` is idempotent and purely additive (see [Data model](#data-model)). Before running it on a project with old data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`).
+- **Supabase:** run the SQL files in `supabase/migrations/` in order in the SQL Editor: `0001_schema.sql`, `0002_rls.sql`, `0003_care_features.sql`, `0004_vital_readings_unique.sql`, `0005_rls_perf.sql`. `0003` is idempotent and purely additive (see [Data model](#data-model)). Before running it on a project with old data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`). `0005` only rewrites policies for the performance advisor (same access) and adds foreign-key indexes; run it again after re-running `0002`, `0003` or vela-web's migrations.
 - **Phone (Expo Go):** scan the QR from `npm start`; phone and computer on the same Wi-Fi, or `npx expo start --tunnel`.
 - **Web preview:** `npm run web`.
 - Without `.env` the UI still loads; auth calls just fail.
@@ -120,7 +120,7 @@ src/
   features/settings/    text size
   lib/                  supabase client, env, mutate/invalidate, device prefs
 supabase/
-  migrations/           0001_schema, 0002_rls, 0003_care_features, 0004_vital_readings_unique
+  migrations/           0001_schema, 0002_rls, 0003_care_features, 0004_vital_readings_unique, 0005_rls_perf
   functions/            delete-account Edge Function
 __tests__/              unit + screen tests
 docs/superpowers/       earlier specs and plans (written under the Vela name)
