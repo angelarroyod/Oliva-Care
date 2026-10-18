@@ -1,87 +1,208 @@
-import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, Pressable, StyleSheet, AccessibilityInfo, type Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Icon, type IconName } from '@/components/Icon';
+import { Button, BackButton } from '@/components/Button';
+import { ErrorText, Field } from '@/components/Controls';
+import { Notice } from '@/components/Status';
+import { H1, T, type TProps } from '@/components/T';
 import { supabase } from '@/lib/supabase';
 import { normalizeInviteCode } from '@/features/auth/invite';
-import { colors, fontFamilyForWeight } from '@/theme';
+import { useAuth } from '@/features/auth/useAuth';
+import { useTextScale } from '@/features/settings/textScale';
+import { colors, font, radius } from '@/theme';
 
-type Step = 'role' | 'nurse' | 'family';
+type Role = 'nurse' | 'family';
+type Step = 'role' | 'patient' | 'code';
 
-function RoleRow({ title, subtitle, icon, iconBg, iconColor, onPress }: {
-  title: string; subtitle: string; icon: IconName; iconBg: string; iconColor: string; onPress: () => void;
-}) {
+const ROLES: [Role, string, string][] = [
+  ['nurse', 'Soy enfermera o enfermero', 'Anoto los signos, la medicación y cómo va el turno.'],
+  ['family', 'Soy familiar', 'Quiero saber cómo está mi ser querido.'],
+];
+const ROLE_Q = '¿Cómo vas a usar Tend?';
+
+// Back button + "Paso n de 3" + the 3-segment bar (decorative; the words say it).
+function Steps({ n, onBack }: { n: number; onBack: () => void }) {
   return (
-    <Pressable onPress={onPress} style={s.role} accessibilityRole="button">
-      <View style={[s.roleIcon, { backgroundColor: iconBg }]}>
-        <Icon name={icon} size={24} color={iconColor} strokeWidth={1.9} />
+    <>
+      <View style={s.top}>
+        <BackButton onPress={onBack} />
+        <T size={15} bold color={colors.ink2}>{`Paso ${n} de 3`}</T>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={s.roleTitle}>{title}</Text>
-        <Text style={s.roleSub}>{subtitle}</Text>
+      <View style={s.bar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={[s.seg, { backgroundColor: i <= n ? colors.pri : colors.line }]} />
+        ))}
       </View>
-      <Icon name="chevronRight" size={18} color={colors.chevron} strokeWidth={2.4} />
+    </>
+  );
+}
+
+function RoleCard({ title, sub, selected, onPress }: { title: string; sub: string; selected: boolean; onPress: () => void }) {
+  const border = selected ? colors.pri : colors.line;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      style={[s.card, { borderColor: border, backgroundColor: selected ? colors.priSoft : colors.surface }]}
+    >
+      <View style={s.cardText}>
+        <T size={19} bold>{title}</T>
+        <T size={15} color={colors.ink2}>{sub}</T>
+      </View>
+      <View style={[s.ring, { borderColor: border }]}>
+        <View style={[s.dot, selected && { backgroundColor: colors.pri }]} />
+      </View>
     </Pressable>
   );
 }
 
+
 export default function Onboarding() {
   const router = useRouter();
+  const { signOut } = useAuth();
+  const { pct } = useTextScale();
   const [step, setStep] = useState<Step>('role');
+  const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [room, setRoom] = useState('');
   const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [err, setErr] = useState('');
+  const [serverErr, setServerErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const h1 = useRef<Text>(null);
+  // ponytail: TProps has no `ref` type yet; React 19 passes it through T to the Text.
+  const h1Ref = { ref: h1 } as unknown as TProps;
 
-  const createPatient = async () => {
-    setBusy(true); setError(null);
-    const { error } = await supabase.rpc('create_patient_with_nurse', {
-      p_name: name.trim(), p_age: age ? Number(age) : null, p_room: room.trim() || null,
-    });
-    setBusy(false);
-    if (error) setError(error.message); else router.replace('/(app)/nurse/inicio');
+  // Steps are one route: move screen-reader focus to the new step's h1 ourselves.
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (h1.current) AccessibilityInfo.sendAccessibilityEvent(h1.current, 'focus');
+  }, [step]);
+
+  const go = (next: Step) => {
+    setErr('');
+    setServerErr(null);
+    setStep(next);
   };
 
-  const redeem = async () => {
-    setBusy(true); setError(null);
-    const { error } = await supabase.rpc('redeem_invite', { p_code: normalizeInviteCode(code) });
+  // The account already exists here, and index sends a member-less session straight
+  // back to this screen, so leaving onboarding means signing out.
+  const leave = async () => {
+    await signOut();
+    router.replace('/(auth)/welcome');
+  };
+
+  const doRole = () => {
+    if (!role) return setErr('Elige una de las dos opciones.');
+    go(role === 'nurse' ? 'patient' : 'code');
+  };
+
+  const doPatient = async () => {
+    if (!name.trim()) return setErr('Escribe el nombre del paciente.');
+    setErr('');
+    setServerErr(null);
+    setBusy(true);
+    const { error } = await supabase.rpc('create_patient_with_nurse', {
+      p_name: name.trim(),
+      p_age: age ? Number(age) : null,
+      p_room: room.trim() || null,
+    });
     setBusy(false);
-    if (error) setError('Código inválido o expirado'); else router.replace('/(app)/family/inicio');
+    if (error) setServerErr(error.message);
+    else router.replace('/(app)/nurse/inicio');
+  };
+
+  const doCode = async () => {
+    if (code.length !== 6) return setErr(`El código tiene 6 caracteres. Has escrito ${code.length}.`);
+    setErr('');
+    setServerErr(null);
+    setBusy(true);
+    const { error } = await supabase.rpc('redeem_invite', { p_code: code });
+    setBusy(false);
+    if (error) setServerErr('Código inválido o expirado');
+    else router.replace('/(app)/family/inicio');
   };
 
   return (
-    <Screen time="9:41" bg={colors.white}>
+    <Screen gap={18}>
       <View style={s.body}>
-        {step === 'role' && (
+        {step === 'role' ? (
           <>
-            <Text style={s.title}>¿Cómo usarás Vela?</Text>
-            <RoleRow title="Soy enfermera/o" subtitle="Registro signos y novedades del turno" icon="pulse" iconBg={colors.mint} iconColor={colors.primaryDeep} onPress={() => setStep('nurse')} />
-            <RoleRow title="Soy familiar" subtitle="Sigo el estado de mi ser querido" icon="heart" iconBg={colors.amberFill2} iconColor={colors.amberRole} onPress={() => setStep('family')} />
+            <Steps n={2} onBack={leave} />
+            <H1 {...h1Ref} size={34}>{ROLE_Q}</H1>
+            <View accessibilityRole="radiogroup" accessibilityLabel={ROLE_Q} style={s.group}>
+              {ROLES.map(([k, title, sub]) => (
+                <RoleCard
+                  key={k}
+                  title={title}
+                  sub={sub}
+                  selected={role === k}
+                  onPress={() => {
+                    setRole(k);
+                    setErr('');
+                  }}
+                />
+              ))}
+            </View>
+            {err ? <ErrorText>{err}</ErrorText> : null}
+            <View style={s.foot}>
+              <Button label="Continuar" onPress={doRole} />
+            </View>
           </>
-        )}
-
-        {step === 'nurse' && (
+        ) : step === 'patient' ? (
           <>
-            <Text style={s.title}>Datos del paciente</Text>
-            <TextInput style={s.input} placeholder="Nombre del paciente" value={name} onChangeText={setName} placeholderTextColor={colors.muted3} />
-            <TextInput style={s.input} placeholder="Edad" keyboardType="number-pad" value={age} onChangeText={setAge} placeholderTextColor={colors.muted3} />
-            <TextInput style={s.input} placeholder="Habitación (opcional)" value={room} onChangeText={setRoom} placeholderTextColor={colors.muted3} />
-            {error ? <Text style={s.error}>{error}</Text> : null}
-            <PrimaryButton label={busy ? 'Creando…' : 'Continuar'} onPress={createPatient} />
+            <Steps n={3} onBack={() => go('role')} />
+            <H1 {...h1Ref} size={34}>¿A quién vas a cuidar?</H1>
+            <Field label="Nombre del paciente" value={name} onChangeText={(v) => { setName(v); setErr(''); }} autoComplete="off" error={err || undefined} />
+            <Field
+              label="Edad"
+              value={age}
+              onChangeText={(v) => setAge(v.replace(/\D/g, ''))}
+              keyboardType="number-pad"
+              maxLength={3}
+              inputStyle={s.age}
+            />
+            <Field label="Habitación" optional value={room} onChangeText={setRoom} />
+            {serverErr ? <Notice tone="alert" alert>{serverErr}</Notice> : null}
+            <View style={s.foot}>
+              <Button label="Empezar el turno" onPress={doPatient} disabled={busy} />
+            </View>
           </>
-        )}
-
-        {step === 'family' && (
+        ) : (
           <>
-            <Text style={s.title}>Código de invitación</Text>
-            <Text style={s.help}>Pídele a la enfermera el código de 6 caracteres.</Text>
-            <TextInput style={[s.input, s.code]} placeholder="ABC123" autoCapitalize="characters" value={code} onChangeText={setCode} placeholderTextColor={colors.muted3} />
-            {error ? <Text style={s.error}>{error}</Text> : null}
-            <PrimaryButton label={busy ? 'Uniéndote…' : 'Unirme'} onPress={redeem} />
+            <Steps n={3} onBack={() => go('role')} />
+            <H1 {...h1Ref} size={34}>Únete con un código</H1>
+            <T size={17} lh={1.45} color={colors.ink2}>
+              Pídeselo a la enfermera. Ella lo encuentra en <T size={17} lh={1.45} bold>Perfil → Invitar a la familia</T>.
+            </T>
+            <Field
+              label="Código de invitación"
+              value={code}
+              onChangeText={(v) => {
+                // ponytail: no maxLength, it would cut a pasted " VX7-K2P" before normalising.
+                setCode(normalizeInviteCode(v).slice(0, 6));
+                setErr('');
+              }}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoComplete="one-time-code"
+              textContentType="oneTimeCode"
+              inputSize={28}
+              inputStyle={[s.code, { letterSpacing: (28 * pct * 0.3) / 100 }]}
+              hint={`6 letras o números. Llevas ${code.length}.`}
+              error={err || undefined}
+            />
+            {serverErr ? <Notice tone="alert" alert>{serverErr}</Notice> : null}
+            <View style={s.foot}>
+              <Button label="Unirme al cuidado" onPress={doCode} disabled={busy} />
+            </View>
           </>
         )}
       </View>
@@ -90,14 +211,17 @@ export default function Onboarding() {
 }
 
 const s = StyleSheet.create({
-  body: { paddingHorizontal: 24, paddingTop: 24, gap: 13 },
-  title: { fontFamily: fontFamilyForWeight(700), fontSize: 22, color: colors.ink, marginBottom: 6 },
-  help: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.muted2, marginTop: -6 },
-  role: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 16 },
-  roleIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  roleTitle: { fontFamily: fontFamilyForWeight(700), fontSize: 16, color: colors.ink },
-  roleSub: { fontFamily: fontFamilyForWeight(500), fontSize: 12, color: colors.muted2, marginTop: 2 },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontFamily: fontFamilyForWeight(500), fontSize: 15, color: colors.ink },
-  code: { letterSpacing: 4, textAlign: 'center', fontFamily: fontFamilyForWeight(700), fontSize: 20 },
-  error: { fontFamily: fontFamilyForWeight(600), fontSize: 13, color: '#B4452F' },
+  // Access screens use 24/32 padding (Screen gives 20/28); the button sits at the bottom.
+  body: { flexGrow: 1, gap: 18, paddingHorizontal: 4, paddingBottom: 4 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 },
+  bar: { flexDirection: 'row', gap: 6 },
+  seg: { flex: 1, height: 6, borderRadius: 9 },
+  group: { gap: 12 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: radius.card, borderWidth: 2 },
+  cardText: { flex: 1, gap: 4 },
+  ring: { width: 28, height: 28, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 14, height: 14, borderRadius: radius.pill },
+  foot: { marginTop: 'auto' },
+  age: { flex: 0, width: 140 },
+  code: { minHeight: 64, fontFamily: font.bold, textAlign: 'center' },
 });

@@ -1,60 +1,63 @@
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from '@/components/StatusBar';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Icon } from '@/components/Icon';
-import { colors, font, fontFamilyForWeight } from '@/theme';
+import { Screen } from '@/components/Screen';
+import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { Button } from '@/components/Button';
+import { Icon, type IconName } from '@/components/Icon';
+import { T } from '@/components/T';
+import { colors } from '@/theme';
 
-export default function Welcome() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === 'web' ? 0 : insets.top;
-
+function Bullet({ icon, children }: { icon: IconName; children: string }) {
   return (
-    <View style={s.screen}>
-      <LinearGradient colors={[...colors.gradWelcome]} start={{ x: 0, y: 0 }} end={{ x: 0.4, y: 1 }} style={s.header}>
-        <View style={{ paddingTop: topPad }}>
-          <StatusBar time="21:30" tint="light" />
-        </View>
-        <View style={s.hero}>
-          <View style={s.logoTile}>
-            <Icon name="drop" size={34} color="#fff" />
-          </View>
-          <Text style={s.wordmark}>Vela</Text>
-          <Text style={s.tagline}>Cuidado que acompaña, de día y de noche.</Text>
-        </View>
-      </LinearGradient>
-
-      <View style={s.body}>
-        <Text style={s.lead}>Cuidado compartido entre quienes registran y quienes acompañan.</Text>
-        <View style={s.actions}>
-          <PrimaryButton label="Crear cuenta" onPress={() => router.push('/(auth)/signup')} />
-          <Pressable style={s.loginRow} onPress={() => router.push('/(auth)/login')} accessibilityRole="button">
-            <Text style={s.loginMuted}>¿Ya tienes cuenta? </Text>
-            <Text style={s.loginLink}>Iniciar sesión</Text>
-          </Pressable>
-        </View>
+    <View style={s.bullet}>
+      <View style={s.tile}>
+        <Icon name={icon} size={20} color={colors.pri} />
       </View>
+      <T size={17} style={s.bulletText}>{children}</T>
     </View>
   );
 }
 
+export default function Welcome() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  return (
+    <Screen bg={colors.welcome} scroll={false} bottomInset={false}>
+      <ScrollView contentContainerStyle={s.scroll} bounces={false}>
+        <View style={s.hero}>
+          <AnimatedLogo />
+          <T size={19} color={colors.ink2} center style={s.tagline}>
+            Cuidado profesional en casa, con la familia al tanto.
+          </T>
+        </View>
+        <View style={[s.panel, { paddingBottom: 32 + insets.bottom }]}>
+          <T size={19} bold>Cuida a tu familiar en equipo, en un solo lugar.</T>
+          <View style={s.bullets}>
+            <Bullet icon="pulse">La enfermera anota cómo va el turno.</Bullet>
+            <Bullet icon="heart">La familia ve cómo está, en cualquier momento.</Bullet>
+          </View>
+          <View style={s.actions}>
+            <Button label="Crear cuenta" onPress={() => router.push('/(auth)/signup')} />
+            <Button label="Ya tengo cuenta" variant="secondary" onPress={() => router.push('/(auth)/login')} />
+          </View>
+        </View>
+      </ScrollView>
+    </Screen>
+  );
+}
+
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.white },
-  header: { paddingBottom: 44 },
-  hero: { alignItems: 'center', paddingHorizontal: 30, paddingTop: 40 },
-  logoTile: {
-    width: 72, height: 72, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center',
+  scroll: { flexGrow: 1 },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingTop: 8, paddingHorizontal: 28, paddingBottom: 40 },
+  tagline: { maxWidth: 290 },
+  panel: {
+    backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingTop: 28, paddingHorizontal: 24, gap: 22,
   },
-  wordmark: { fontFamily: font.serif, fontSize: 46, color: '#fff', lineHeight: 48, marginTop: 18 },
-  tagline: { fontFamily: fontFamilyForWeight(500), fontSize: 15, color: colors.onGreenText, marginTop: 10, maxWidth: 240, textAlign: 'center', lineHeight: 22 },
-  body: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
-  lead: { fontFamily: font.serif, fontSize: 24, color: colors.ink, lineHeight: 30 },
-  actions: { marginTop: 'auto', paddingBottom: 32, gap: 16 },
-  loginRow: { flexDirection: 'row', justifyContent: 'center' },
-  loginMuted: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.muted2 },
-  loginLink: { fontFamily: fontFamilyForWeight(700), fontSize: 13, color: colors.primary },
+  bullets: { gap: 14 },
+  bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  tile: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },
+  bulletText: { flex: 1, paddingTop: 6 },
+  actions: { gap: 12 },
 });

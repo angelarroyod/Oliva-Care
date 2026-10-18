@@ -1,4 +1,4 @@
--- Vela row-level security + helpers (M2). Apply after 0001_schema.sql.
+-- Tend (formerly Vela) row-level security + helpers (M2). Apply after 0001_schema.sql.
 -- Idempotent: safe to re-run.
 
 alter table public.profiles enable row level security;

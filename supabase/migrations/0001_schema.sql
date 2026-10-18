@@ -1,4 +1,4 @@
--- Vela schema (M2). Apply via Supabase SQL Editor or `supabase db push`.
+-- Tend (formerly Vela) schema (M2). Apply via Supabase SQL Editor or `supabase db push`.
 
 -- Profiles mirror auth.users (1:1).
 create table public.profiles (

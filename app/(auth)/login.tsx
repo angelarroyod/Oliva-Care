@@ -1,69 +1,119 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { Button, BackButton } from '@/components/Button';
+import { Field } from '@/components/Controls';
+import { Notice } from '@/components/Status';
+import { H1, T } from '@/components/T';
+import { useToast } from '@/components/Toast';
 import { AppleButton } from '@/features/auth/appleAuth';
 import { useAuth } from '@/features/auth/useAuth';
-import { colors, fontFamilyForWeight } from '@/theme';
+import { supabase } from '@/lib/supabase';
+import { colors, radius } from '@/theme';
+
+const EMAIL_RE = /.+@.+\..+/;
+const EMAIL_ERR = 'Escribe tu correo completo, por ejemplo nombre@correo.com';
 
 export default function Login() {
   const { signIn } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [pwd, setPwd] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [errs, setErrs] = useState<{ email?: string; pwd?: string }>({});
+  const [serverErr, setServerErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const mail = email.trim();
+  const emailOk = EMAIL_RE.test(mail);
+  // Editing a field clears its written error, as in the prototype.
+  const edit = (k: 'email' | 'pwd', set: (v: string) => void) => (v: string) => {
+    set(v);
+    setErrs((e) => ({ ...e, [k]: '' }));
+  };
 
   const submit = async () => {
+    const next = { email: emailOk ? '' : EMAIL_ERR, pwd: pwd ? '' : 'Escribe tu contraseña.' };
+    setErrs(next);
+    setServerErr(null);
+    if (next.email || next.pwd) return;
     setBusy(true);
-    setError(null);
-    const { error } = await signIn(email.trim(), password);
+    const { error } = await signIn(mail, pwd);
     setBusy(false);
-    if (error) setError(error);
+    if (error) setServerErr(error);
     else router.replace('/');
   };
 
+  const forgot = async () => {
+    if (!emailOk) return toast.show('Escribe tu correo y te enviaremos un enlace.');
+    const { error } = await supabase.auth.resetPasswordForEmail(mail);
+    toast.show(error ? error.message : `Te enviamos un enlace a ${mail}.`);
+  };
+
   return (
-    <Screen time="9:41" bg={colors.white}>
+    <Screen gap={20}>
       <View style={s.body}>
-        <Text style={s.title}>Bienvenido de nuevo</Text>
-        <TextInput
-          style={s.input}
-          placeholder="correo@ejemplo.com"
-          autoCapitalize="none"
-          keyboardType="email-address"
+        <BackButton onPress={() => router.back()} />
+        <H1 size={36}>Entrar</H1>
+        <Field
+          label="Correo electrónico"
           value={email}
-          onChangeText={setEmail}
-          placeholderTextColor={colors.muted3}
+          onChangeText={edit('email', setEmail)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="emailAddress"
+          error={errs.email}
         />
-        <TextInput
-          style={s.input}
-          placeholder="Contraseña"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          placeholderTextColor={colors.muted3}
+        <Field
+          label="Contraseña"
+          value={pwd}
+          onChangeText={edit('pwd', setPwd)}
+          secureTextEntry={!showPwd}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="current-password"
+          textContentType="password"
+          error={errs.pwd}
+          right={
+            <Pressable
+              onPress={() => setShowPwd((v) => !v)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: showPwd }}
+              style={s.toggle}
+            >
+              <T size={15} bold color={colors.pri}>{showPwd ? 'Ocultar' : 'Mostrar'}</T>
+            </Pressable>
+          }
         />
-        {error ? <Text style={s.error}>{error}</Text> : null}
-        <PrimaryButton label={busy ? 'Entrando…' : 'Iniciar sesión'} onPress={submit} />
-        <AppleButton />
-        <Text style={s.alt} onPress={() => router.push('/(auth)/signup')}>
-          ¿No tienes cuenta? <Text style={s.link}>Crear cuenta</Text>
-        </Text>
+        <Pressable onPress={forgot} accessibilityRole="button" style={s.link}>
+          <T size={16} bold color={colors.pri} style={s.underline}>¿Olvidaste tu contraseña?</T>
+        </Pressable>
+        {serverErr ? <Notice tone="alert" alert>{serverErr}</Notice> : null}
+        <Button label="Entrar" onPress={submit} disabled={busy} />
+        <AppleButton onError={setServerErr} />
+        <View style={s.alt}>
+          <T size={16} color={colors.ink2}>¿Primera vez?</T>
+          <Pressable onPress={() => router.replace('/(auth)/signup')} accessibilityRole="button" style={s.altLink}>
+            <T size={16} bold color={colors.pri} style={s.underline}>Crear cuenta</T>
+          </Pressable>
+        </View>
       </View>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  body: { paddingHorizontal: 24, paddingTop: 24, gap: 14 },
-  title: { fontFamily: fontFamilyForWeight(700), fontSize: 26, color: colors.ink, marginBottom: 6 },
-  input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-    fontFamily: fontFamilyForWeight(500), fontSize: 15, color: colors.ink,
+  // Access screens use 24/32 padding (Screen gives 20/28).
+  body: { gap: 20, paddingHorizontal: 4, paddingBottom: 4 },
+  toggle: {
+    minWidth: 92, minHeight: 56, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.input,
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12,
   },
-  error: { fontFamily: fontFamilyForWeight(600), fontSize: 13, color: '#B4452F' },
-  alt: { fontFamily: fontFamilyForWeight(500), fontSize: 13, color: colors.muted2, textAlign: 'center', marginTop: 8 },
-  link: { fontFamily: fontFamilyForWeight(700), color: colors.primary },
+  link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  underline: { textDecorationLine: 'underline' },
+  alt: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
+  altLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
 });

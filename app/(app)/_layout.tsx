@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/features/auth/useAuth';
 import { useMembership } from '@/features/auth/useMembership';
+import { OfflineSync } from '@/components/Offline';
 
 export default function AppLayout() {
   const { session, loading: authLoading } = useAuth();
@@ -8,5 +9,9 @@ export default function AppLayout() {
   if (authLoading || (session && memLoading)) return null;
   if (!session) return <Redirect href="/(auth)/welcome" />;
   if (!membership) return <Redirect href="/(auth)/onboarding" />;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <OfflineSync role={membership.role}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </OfflineSync>
+  );
 }

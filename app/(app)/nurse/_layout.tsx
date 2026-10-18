@@ -5,6 +5,8 @@ export default function NurseStack() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="medicacion" options={{ presentation: 'card' }} />
+      <Stack.Screen name="aviso/[id]" options={{ presentation: 'card' }} />
+      <Stack.Screen name="pauta-nueva" options={{ presentation: 'card' }} />
     </Stack>
   );
 }

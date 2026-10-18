@@ -1,179 +1,50 @@
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { colors } from '@/theme';
 
-export type IconName =
-  | 'drop' | 'pulse' | 'heart' | 'pill' | 'clipboard' | 'home' | 'user'
-  | 'message' | 'send' | 'check' | 'plus' | 'chevronRight' | 'chevronLeft'
-  | 'warningTri' | 'warningCircle' | 'bell' | 'phone' | 'bulb'
-  | 'signal' | 'wifi' | 'battery';
+// 24×24 round-cap stroke icons from the Tend prototype (constant `I`).
+const PATHS = {
+  check: 'M5 12.5l4.5 4.5L19 6.5',
+  warn: 'M12 8v5M12 16.5v.01M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z',
+  alert: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 7.5V13M12 16.5v.01',
+  ban: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM5.6 5.6l12.8 12.8',
+  clock: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 7.5V12l3 2',
+  pill: 'M10.5 13.5 7 17a3.5 3.5 0 0 1-5-5l3.5-3.5M13.5 10.5 17 7a3.5 3.5 0 0 0-5-5L8.5 5.5M9 15l6-6',
+  pulse: 'M3 12h4l2-6 3 12 2-6h7',
+  home: 'M3 10.5 12 3l9 7.5M5 9.5V20h14V9.5',
+  clipboard: 'M9 3.5h6v3H9zM7.5 5H6a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 18 5h-1.5M9 12h6M9 15.5h4',
+  user: 'M12 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zM5 20c0-3.6 3-6 7-6s7 2.4 7 6',
+  message: 'M5 6h14v9H10l-4 3.5V15H5z',
+  calendar: 'M4 6.5h16V20H4zM4 10.5h16M8.5 3.5v5M15.5 3.5v5',
+  chevronRight: 'M9 5l7 7-7 7',
+  chevronLeft: 'M15 5l-7 7 7 7',
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10.5 21a1.8 1.8 0 0 0 3 0',
+  eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z',
+  wifiOff: 'M2 8.8a15 15 0 0 1 4.2-2.6M9.5 5.2A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 3.4-2M13 10.2a10 10 0 0 1 6 2.3M8.5 16a5 5 0 0 1 7 0M12 20h.01M3 3l18 18',
+  phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 4v2a2 2 0 0 1-2 2A16 16 0 0 1 3 7a2 2 0 0 1 2-3z',
+  heart: 'M12 20s-6.5-4-6.5-8.5A3.4 3.4 0 0 1 12 8a3.4 3.4 0 0 1 6.5 3.5C18.5 16 12 20 12 20z',
+  send: 'M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z',
+} as const;
+
+export type IconName = keyof typeof PATHS;
 
 export function Icon({
   name,
   size = 24,
-  color = '#28332E',
-  strokeWidth = 1.9,
+  color = colors.ink,
+  strokeWidth = 2,
 }: {
   name: IconName;
   size?: number;
   color?: string;
   strokeWidth?: number;
 }) {
-  const stroke = {
-    fill: 'none' as const,
-    stroke: color,
-    strokeWidth,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
-  switch (name) {
-    case 'home':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M3 10.5 12 3l9 7.5" {...stroke} />
-          <Path d="M5 9.5V20h14V9.5" {...stroke} />
-        </Svg>
-      );
-    case 'pulse':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M3 12h4l2-6 3 12 2-6h7" {...stroke} />
-        </Svg>
-      );
-    case 'user':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Circle cx={12} cy={8} r={3.5} {...stroke} />
-          <Path d="M5 20c0-3.6 3-6 7-6s7 2.4 7 6" {...stroke} />
-        </Svg>
-      );
-    case 'clipboard':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Rect x={6} y={4} width={12} height={17} rx={2.5} {...stroke} />
-          <Path d="M9.5 4h5v3h-5z" {...stroke} />
-          <Path d="M9 11.5h6M9 15h4" {...stroke} />
-        </Svg>
-      );
-    case 'message':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M5 6h14v9H10l-4 3.5V15H5z" {...stroke} />
-        </Svg>
-      );
-    case 'chevronRight':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M9 5l7 7-7 7" {...stroke} />
-        </Svg>
-      );
-    case 'chevronLeft':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M15 5l-7 7 7 7" {...stroke} />
-        </Svg>
-      );
-    case 'plus':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M12 5v14M5 12h14" {...stroke} />
-        </Svg>
-      );
-    case 'check':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M5 12.5l4.5 4.5L19 6.5" {...stroke} />
-        </Svg>
-      );
-    case 'send':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" {...stroke} />
-        </Svg>
-      );
-    case 'heart':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M12 20s-6.5-4-6.5-8.5A3.4 3.4 0 0 1 12 8a3.4 3.4 0 0 1 6.5 3.5C18.5 16 12 20 12 20z" {...stroke} />
-        </Svg>
-      );
-    case 'drop':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M12 3c0 4-3 5-3 8a3 3 0 0 0 6 0c0-3-3-4-3-8z" fill={color} />
-          <Path d="M8 16a4 4 0 0 0 8 0" stroke={color} strokeWidth={1.6} strokeLinecap="round" fill="none" />
-        </Svg>
-      );
-    case 'pill':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M10.5 13.5 7 17a3.5 3.5 0 0 1-5-5l3.5-3.5" {...stroke} />
-          <Path d="M13.5 10.5 17 7a3.5 3.5 0 0 0-5-5L8.5 5.5" {...stroke} />
-          <Path d="M9 15l6-6" {...stroke} />
-        </Svg>
-      );
-    case 'warningTri':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M12 8v5" {...stroke} />
-          <Circle cx={12} cy={16.5} r={0.3} {...stroke} />
-          <Path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z" {...stroke} />
-        </Svg>
-      );
-    case 'warningCircle':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M12 8v5" {...stroke} />
-          <Circle cx={12} cy={16.5} r={0.4} {...stroke} />
-        </Svg>
-      );
-    case 'bell':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" {...stroke} />
-          <Path d="M10.5 21a1.8 1.8 0 0 0 3 0" {...stroke} />
-        </Svg>
-      );
-    case 'phone':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 4v2a2 2 0 0 1-2 2A16 16 0 0 1 3 7a2 2 0 0 1 2-3z" {...stroke} />
-        </Svg>
-      );
-    case 'bulb':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-          <Path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10c.6.6 1 1.3 1 2h6c0-.7.4-1.4 1-2a6 6 0 0 0-4-10z" {...stroke} />
-        </Svg>
-      );
-    case 'signal':
-      return (
-        <Svg width={size} height={12} viewBox="0 0 18 12">
-          <Rect x={0} y={7} width={3} height={5} rx={1} fill={color} />
-          <Rect x={5} y={4} width={3} height={8} rx={1} fill={color} />
-          <Rect x={10} y={2} width={3} height={10} rx={1} fill={color} />
-          <Rect x={15} y={0} width={3} height={12} rx={1} fill={color} />
-        </Svg>
-      );
-    case 'wifi':
-      return (
-        <Svg width={17} height={12} viewBox="0 0 17 12">
-          <Path
-            d="M1 4.4C5.2 1 11.8 1 16 4.4M3.6 6.9C6.2 4.9 10.8 4.9 13.4 6.9M6.2 9.2C7.5 8.2 9.5 8.2 10.8 9.2"
-            fill="none"
-            stroke={color}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
-        </Svg>
-      );
-    case 'battery':
-      return (
-        <Svg width={26} height={13} viewBox="0 0 26 13">
-          <Rect x={0.5} y={0.5} width={21} height={12} rx={3.5} stroke={color} strokeOpacity={0.4} fill="none" />
-          <Rect x={2} y={2} width={16.5} height={9} rx={2} fill={color} />
-          <Rect x={23.5} y={4.5} width={2} height={4} rx={1} fill={color} fillOpacity={0.4} />
-        </Svg>
-      );
-    default:
-      return null;
-  }
+  const d = PATHS[name];
+  if (!d) return null;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Path d={d} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
 }

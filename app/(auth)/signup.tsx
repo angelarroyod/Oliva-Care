@@ -1,64 +1,126 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Icon } from '@/components/Icon';
+import { Button, BackButton } from '@/components/Button';
+import { Field, CheckRow, ErrorText } from '@/components/Controls';
+import { Notice } from '@/components/Status';
+import { H1, T } from '@/components/T';
 import { useAuth } from '@/features/auth/useAuth';
-import { colors, fontFamilyForWeight } from '@/theme';
+import { colors } from '@/theme';
+
+const EMAIL_RE = /.+@.+\..+/;
+type Errs = { name?: string; email?: string; pwd?: string; accept?: string };
 
 export default function Signup() {
   const { signUp } = useAuth();
   const router = useRouter();
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [consent, setConsent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [pwd, setPwd] = useState('');
+  const [accepted, setAccepted] = useState(false);
+  const [errs, setErrs] = useState<Errs>({});
+  const [serverErr, setServerErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Editing a field clears its written error, as in the prototype.
+  const edit = (k: keyof Errs, set: (v: string) => void) => (v: string) => {
+    set(v);
+    setErrs((e) => ({ ...e, [k]: '' }));
+  };
 
   const submit = async () => {
-    if (!consent) return;
+    const next: Errs = {
+      name: name.trim() ? '' : 'Escribe tu nombre.',
+      email: EMAIL_RE.test(email.trim()) ? '' : 'Escribe tu correo completo, por ejemplo nombre@correo.com',
+      pwd: pwd.length >= 8 ? '' : 'La contraseña necesita al menos 8 letras o números.',
+      accept: accepted ? '' : 'Marca la casilla para continuar.',
+    };
+    setErrs(next);
+    setServerErr(null);
+    if (Object.values(next).some(Boolean)) return;
     setBusy(true);
-    setError(null);
-    const { error } = await signUp(email.trim(), password, fullName.trim());
+    const { error } = await signUp(email.trim(), pwd, name.trim());
     setBusy(false);
-    if (error) setError(error);
+    if (error) setServerErr(error);
     else router.replace('/(auth)/onboarding');
   };
 
   return (
-    <Screen time="9:41" bg={colors.white}>
+    <Screen gap={18}>
       <View style={s.body}>
-        <Text style={s.title}>Crea tu cuenta</Text>
-        <TextInput style={s.input} placeholder="Nombre completo" value={fullName} onChangeText={setFullName} placeholderTextColor={colors.muted3} />
-        <TextInput style={s.input} placeholder="correo@ejemplo.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholderTextColor={colors.muted3} />
-        <TextInput style={s.input} placeholder="Contraseña" secureTextEntry value={password} onChangeText={setPassword} placeholderTextColor={colors.muted3} />
-
-        <Pressable style={s.consent} onPress={() => setConsent((c) => !c)} accessibilityRole="checkbox" accessibilityState={{ checked: consent }}>
-          <View style={[s.box, consent && s.boxOn]}>{consent ? <Icon name="check" size={14} color="#fff" strokeWidth={3} /> : null}</View>
-          <Text style={s.consentTxt}>
-            Acepto la política de privacidad y entiendo que Vela es una herramienta de registro de cuidados, no un dispositivo médico.
-          </Text>
+        <View style={s.top}>
+          <BackButton onPress={() => router.back()} />
+          <T size={15} bold color={colors.ink2}>Paso 1 de 3</T>
+        </View>
+        <View style={s.bar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {[1, 2, 3].map((n) => (
+            <View key={n} style={[s.seg, { backgroundColor: n <= 1 ? colors.pri : colors.line }]} />
+          ))}
+        </View>
+        <H1 size={34}>Crea tu cuenta</H1>
+        <Field
+          label="Tu nombre"
+          value={name}
+          onChangeText={edit('name', setName)}
+          autoComplete="name"
+          textContentType="name"
+          error={errs.name}
+        />
+        <Field
+          label="Correo electrónico"
+          value={email}
+          onChangeText={edit('email', setEmail)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="emailAddress"
+          error={errs.email}
+        />
+        <Field
+          label="Contraseña"
+          value={pwd}
+          onChangeText={edit('pwd', setPwd)}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          hint="Al menos 8 letras o números."
+          error={errs.pwd}
+        />
+        <CheckRow
+          checked={accepted}
+          onPress={() => {
+            setAccepted((v) => !v);
+            setErrs((e) => ({ ...e, accept: '' }));
+          }}
+        >
+          <T size={15} lh={1.45}>
+            Acepto la política de privacidad. Entiendo que Tend sirve para anotar cuidados y{' '}
+            <T size={15} lh={1.45} bold>no es un aparato médico</T>.
+          </T>
+        </CheckRow>
+        <Pressable onPress={() => router.push('/legal')} accessibilityRole="link" style={s.link}>
+          <T size={15} bold color={colors.pri} style={s.underline}>Leer la política de privacidad</T>
         </Pressable>
-
-        {error ? <Text style={s.error}>{error}</Text> : null}
-        <PrimaryButton label={busy ? 'Creando…' : 'Crear cuenta'} onPress={submit} />
+        {errs.accept ? (
+          <ErrorText style={s.tight}>{errs.accept}</ErrorText>
+        ) : null}
+        {serverErr ? <Notice tone="alert" alert>{serverErr}</Notice> : null}
+        <Button label="Continuar" onPress={submit} disabled={busy} />
       </View>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  body: { paddingHorizontal: 24, paddingTop: 24, gap: 14 },
-  title: { fontFamily: fontFamilyForWeight(700), fontSize: 26, color: colors.ink, marginBottom: 6 },
-  input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-    fontFamily: fontFamilyForWeight(500), fontSize: 15, color: colors.ink,
-  },
-  consent: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 4 },
-  box: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: colors.muted3, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  boxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  consentTxt: { flex: 1, fontFamily: fontFamilyForWeight(500), fontSize: 12, color: colors.muted, lineHeight: 18 },
-  error: { fontFamily: fontFamilyForWeight(600), fontSize: 13, color: '#B4452F' },
+  // Access screens use 24/32 padding (Screen gives 20/28).
+  body: { gap: 18, paddingHorizontal: 4, paddingBottom: 4 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bar: { flexDirection: 'row', gap: 6 },
+  seg: { flex: 1, height: 6, borderRadius: 9 },
+  link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', marginTop: -8 },
+  underline: { textDecorationLine: 'underline' },
+  tight: { marginTop: -8 },
 });

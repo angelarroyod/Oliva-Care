@@ -1,18 +1,15 @@
-import { colors, font, radius, shadow, fontFamilyForWeight } from '@/theme';
+import { colors, font, radius } from '@/theme';
 
-test('core brand colors present', () => {
-  expect(colors.primary).toBe('#5C8A77');
-  expect(colors.ink).toBe('#28332E');
-  expect(colors.appBg).toBe('#F1F5F2');
+test('Tend palette tokens', () => {
+  expect(colors.bg).toBe('#F4FAF7');
+  expect(colors.ink).toBe('#0E2F2B');
+  expect(colors.pri).toBe('#0F5C52');
+  expect(colors.danger).toBe('#A3321F');
 });
 
-test('weight maps to google-font family', () => {
-  expect(fontFamilyForWeight(700)).toBe('HankenGrotesk_700Bold');
-  expect(fontFamilyForWeight(400)).toBe('HankenGrotesk_400Regular');
-  expect(font.serif).toBe('InstrumentSerif_400Regular');
-});
-
-test('phone frame shadow shaped for RN', () => {
-  expect(shadow.phone.shadowColor).toBe('#355E50');
-  expect(radius.phone).toBe(46);
+test('Atkinson Hyperlegible Next + Bricolage wordmark', () => {
+  expect(font.regular).toBe('AtkinsonHyperlegibleNext_400Regular');
+  expect(font.bold).toBe('AtkinsonHyperlegibleNext_700Bold');
+  expect(font.brand).toBe('BricolageGrotesque_800ExtraBold');
+  expect(radius.card).toBe(16);
 });

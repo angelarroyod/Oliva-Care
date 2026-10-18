@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Vela",
-    "slug": "vela",
-    "scheme": "vela",
+    "name": "Tend",
+    "slug": "tend",
+    "scheme": "tend",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,16 +10,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.vela.app",
+      "bundleIdentifier": "com.tend.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "es"
       }
     },
     "android": {
-      "package": "com.vela.app",
+      "package": "com.tend.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#DDF1E8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
