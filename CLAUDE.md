@@ -21,7 +21,7 @@ npm run typecheck         # tsc --noEmit
 
 CI (`.github/workflows/ci.yml`) runs `typecheck` and `npm test -- --ci`. There's no linter or formatter.
 
-Jest also picks up the test copies in `.claude/worktrees/`. When verifying, run `npx jest --testPathIgnorePatterns '<rootDir>/.claude/'` (or add that pattern to `jest.config.js`).
+Jest also picks up the test copies in `.claude/worktrees/`. When verifying, run `npx jest --testPathIgnorePatterns '/node_modules/' '<rootDir>/.claude/'` (the CLI flag replaces the default `/node_modules/`, so pass both; or add the pattern to `jest.config.js`).
 
 Without `.env` (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`) the UI still loads; auth calls fail.
 
