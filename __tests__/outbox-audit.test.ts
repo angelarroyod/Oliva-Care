@@ -4,7 +4,9 @@
 // small in-memory PostgREST below (unique keys, upsert, eq filters, and requests
 // that can be held, fail, or commit and then lose their response).
 import { createClient } from '@supabase/supabase-js';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { flush, lastQueued, mutate, outboxSnapshot, setOnline, unqueue } from '@/lib/db';
+import { useLiveList } from '@/features/care/useLiveList';
 
 const mockPrefs = new Map<string, string>();
 jest.mock('@/lib/prefs', () => ({
@@ -13,8 +15,16 @@ jest.mock('@/lib/prefs', () => ({
 }));
 // The access token of whoever is signed in on the phone right now.
 let mockToken: string | null = 'tok-carmen';
+// Live lists read through this mock (OB-9); writes go through the fake server below.
+let mockListRows: Record<string, unknown>[] = [];
+const mockOrder = jest.fn(() => Promise.resolve({ data: mockListRows, error: null as null | { message: string } }));
 jest.mock('@/lib/supabase', () => ({
-  supabase: { auth: { getSession: async () => ({ data: { session: mockToken ? { access_token: mockToken } : null } }) } },
+  supabase: {
+    auth: { getSession: async () => ({ data: { session: mockToken ? { access_token: mockToken } : null } }) },
+    from: () => ({ select: () => ({ eq: () => ({ order: mockOrder, gte: () => ({ order: mockOrder }) }) }) }),
+    channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
+    removeChannel: jest.fn(),
+  },
 }));
 
 // ---------------------------------------------------------------- fake server
@@ -27,6 +37,8 @@ const UNIQUE: Record<string, string[][]> = {
   vital_plans: [['patient_id', 'kind']],
   medication_doses: [['id'], ['schedule_id', 'scheduled_for']],
   vital_readings: [['id'], ['control_id', 'kind']],
+  patient_conditions: [['patient_id', 'condition']],
+  medication_schedules: [['id']],
 };
 const tables = new Map<string, Row[]>();
 const rows = (t: string) => tables.get(t) ?? [];
@@ -121,6 +133,8 @@ const client = createClient('https://x.supabase.co', 'anon', {
 
 beforeEach(async () => {
   plans.length = 0;
+  mockListRows = [];
+  mockOrder.mockClear();
   mockToken = 'tok-carmen';
   setOnline(true);
   await flush(); // drain whatever a test left behind
@@ -236,3 +250,126 @@ test('[OB-5 replay identity] writes queued by one account are not sent with the 
   await flush();
   expect(requests.filter((r) => r.table === 'messages' && r.auth === 'Bearer tok-rosa')).toEqual([]);
 });
+
+// ------------------------------------------------- findings from verification
+// The adversarial pass refuted the "no independent replay bug" and "no reverse
+// 23505" claims and found more; each has its own failing test.
+
+const dose = (status: string, recorded_by: string, extra: Record<string, unknown> = {}) =>
+  client.from('medication_doses').upsert(
+    { schedule_id: 'met', patient_id: 'p1', scheduled_for: '2026-10-15T14:00:00+00:00', status, recorded_by, ...extra },
+    { onConflict: 'schedule_id,scheduled_for' },
+  );
+
+test('[OB-6 replay / undo] undo after a send that reached the server but lost its response still takes the record back', async () => {
+  // medicacion.tsx: toast undo = unqueue(queued) ? nothing : reset the dose on the server.
+  setOnline(false);
+  await mutate(dose('given', 'c'), 'medication_doses');
+  const queued = lastQueued();
+  setOnline(true);
+  planNext(async (commit) => { commit(); throw new TypeError('Network request failed'); }); // committed, answer lost
+  expect(await flush()).toEqual({ sent: 0, failed: 0 }); // no reconnect toast: the 7 s "Deshacer" is still up
+  if (!unqueue(queued)) {
+    await mutate(client.from('medication_doses').update({ status: 'pending', recorded_by: null }).eq('schedule_id', 'met').eq('recorded_by', 'c'), 'medication_doses');
+  }
+  await flush();
+  expect(rows('medication_doses').map((r) => r.status)).not.toContain('given');
+});
+
+test('[OB-7 replay] a dose recorded offline does not silently overwrite what another nurse recorded meanwhile', async () => {
+  // Online, medicacion.tsx's takenBy() refuses this; through the outbox the stored upsert just replays.
+  setOnline(false);
+  await mutate(dose('given', 'carmen'), 'medication_doses'); // 14:05, Carmen's phone, offline
+  tables.set('medication_doses', [{ id: 'd1', schedule_id: 'met', patient_id: 'p1', scheduled_for: '2026-10-15T14:00:00+00:00', status: 'skipped', skip_reason: 'refused', recorded_by: 'rosa' }]); // 14:10, Rosa online
+  setOnline(true);
+  await flush();
+  expect(rows('medication_doses')[0]).toMatchObject({ status: 'skipped', recorded_by: 'rosa' });
+});
+
+test('[OB-8 23505] an online retry of an insert that already reached the server is not reported as a failure', async () => {
+  // plan.tsx addCondition: on error the plan rows are skipped and the sheet stays open for a retry.
+  const add = () => client.from('patient_conditions').insert({ patient_id: 'p1', condition: 'diabetes', added_by: 'c' });
+  planNext(async (commit) => { commit(); throw new TypeError('Network request failed'); }); // committed, answer lost
+  expect(await mutate(add(), 'patient_conditions')).not.toBeNull(); // shown as "No se pudo guardar"
+  expect(await mutate(add(), 'patient_conditions')).toBeNull(); // the retry: the condition is there
+});
+
+test('[OB-9 sent overlay] a dose recorded offline keeps showing as given when the refetch after sending fails', async () => {
+  mockListRows = [{ id: 'd0', schedule_id: 'met', patient_id: 'p1', scheduled_for: '2026-10-15T14:00:00+00:00', status: 'pending', recorded_by: null }];
+  const { result, unmount } = renderHook(() =>
+    useLiveList('medication_doses', 'p1', { col: 'scheduled_for', asc: true }, (r: { status: string }) => r.status),
+  );
+  await waitFor(() => expect(result.current).toEqual(['pending']));
+  setOnline(false);
+  await act(() => mutate(dose('given', 'c'), 'medication_doses'));
+  expect(result.current).toEqual(['given']);
+  mockOrder.mockImplementationOnce(() => Promise.resolve({ data: null as never, error: { message: 'TypeError: Network request failed' } }));
+  await act(async () => {
+    setOnline(true);
+    await flush(); // the upsert goes out, then the connection drops before the refetch answers
+    setOnline(false);
+  });
+  expect(rows('medication_doses').map((r) => r.status)).toEqual(['given']); // it is on the server…
+  expect(result.current).toEqual(['given']); // …and the phone must not flip it back to pending
+  unmount();
+});
+
+test('[OB-10 entry ids] two writes queued in the same millisecond are both sent', async () => {
+  // ids are Date.now() + Math.random(); near 1.76e12 a double keeps only 2^-12 of the fraction,
+  // so about 1 in 4,096 same-millisecond pairs collide (plan.tsx queues two writes back to back).
+  const now = jest.spyOn(Date, 'now').mockReturnValue(1_760_000_000_000);
+  const rnd = jest.spyOn(Math, 'random').mockReturnValueOnce(0.1).mockReturnValueOnce(0.10001);
+  setOnline(false);
+  try {
+    await mutate(client.from('patient_conditions').insert({ patient_id: 'p1', condition: 'diabetes' }), 'patient_conditions');
+    await mutate(client.from('vital_plans').upsert({ patient_id: 'p1', kind: 'glucose', ranges: [[90, 150]] }, { onConflict: 'patient_id,kind' }), 'vital_plans');
+  } finally {
+    now.mockRestore();
+    rnd.mockRestore();
+  }
+  setOnline(true);
+  expect(await flush()).toEqual({ sent: 2, failed: 0 });
+  expect(rows('vital_plans')).toHaveLength(1);
+});
+
+test('[OB-11 hung send] one queued request that never answers does not freeze every later online save', async () => {
+  setOnline(false);
+  await mutate(client.from('care_events').insert({ id: 'e0', patient_id: 'p1' }), 'care_events');
+  setOnline(true);
+  const hung = holdNext('drop'); // Android's OkHttp client has no read timeout
+  const flushing = flush();
+  await hung.arrived;
+  const save = mutate(client.from('messages').insert({ id: 'm1', patient_id: 'p1', body: 'Hola' }), 'messages');
+  const outcome = await Promise.race([save.then(() => 'settled'), new Promise((r) => setTimeout(() => r('still waiting'), 200))]);
+  hung.release();
+  await flushing;
+  await save;
+  expect(outcome).toBe('settled');
+});
+
+test('[OB-12 online check] a write made during a flush is kept on the phone if the connection drops before it can go out', async () => {
+  setOnline(false);
+  await mutate(client.from('care_events').insert({ id: 'e0', patient_id: 'p1' }), 'care_events');
+  setOnline(true);
+  const sending = holdNext('ok');
+  const flushing = flush();
+  await sending.arrived;
+  const save = mutate(client.from('messages').insert({ id: 'm1', patient_id: 'p1', body: 'Hola' }), 'messages'); // waits for the flush
+  setOnline(false); // the connection drops
+  planNext(async () => { throw new TypeError('Network request failed'); }); // so the message can't go out now
+  sending.release();
+  await flushing;
+  expect(await save).toBeNull(); // "Guardado en el teléfono", not an error
+  expect(outboxSnapshot().pending).toBe(1);
+});
+
+test('[OB-13 lost response online] a write whose response is lost is kept for an idempotent resend, not handed back as failed', async () => {
+  // Screens retry by saving again with new client ids (signos, pauta-nueva, relevo, mensajes),
+  // so a write that did reach the server ends up stored twice.
+  planNext(async (commit) => { commit(); throw new TypeError('Network request failed'); });
+  const err = await mutate(client.from('medication_schedules').insert({ id: 's1', patient_id: 'p1', name: 'Metformina' }), 'medication_schedules');
+  expect({ err, pending: outboxSnapshot().pending }).toEqual({ err: null, pending: 1 });
+  await flush();
+  expect(rows('medication_schedules')).toHaveLength(1);
+});
+
