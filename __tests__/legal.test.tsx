@@ -10,7 +10,7 @@ test('legal screen shows the privacy and medical notice sections', () => {
   expect(screen.getByRole('header', { name: 'Tus datos' })).toBeTruthy();
   expect(screen.getByRole('header', { name: 'Aviso médico' })).toBeTruthy();
   expect(screen.getByText('Nunca vendemos tus datos ni los usamos para publicidad.')).toBeTruthy();
-  expect(screen.getByText(/Tend no es un aparato médico/)).toBeTruthy();
+  expect(screen.getByText(/Oliva no es un aparato médico/)).toBeTruthy();
   expect(screen.getByText('En una emergencia, llama al 112.')).toBeTruthy();
 });
 

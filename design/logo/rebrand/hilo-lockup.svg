@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 684 256">
+<g transform="translate(16 48) scale(0.625)">
+  <path d="M28 184C100 184 172 170 172 120A44 44 0 1 0 84 120C84 170 156 184 228 184" fill="none" stroke="#000" stroke-width="24" stroke-linecap="round"/>
+</g>
+<!-- exploration only: live text, outlines come in the kit -->
+<text x="208" y="168" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="120" letter-spacing="-3">hilo</text>
+</svg>

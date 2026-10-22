@@ -17,8 +17,8 @@ export const colors = {
   danger: '#A3321F', // alert borders and text; fever hero; destructive buttons
   dangerSoft: '#FBE4DE', // alert backgrounds
   welcome: '#DDF1E8', // welcome background, logo tile
-  logoInk: '#0F4A44',
-  logoAccent: '#E8705A',
+  logoInk: '#3A5A2C', // Oliva "Olivo": logo disc and wordmark
+  logoAccent: '#A9BD7A', // "Hoja": the leaf, only ever inside the olive disc
   focus: '#1B6FD8',
   overlay: 'rgba(10,20,15,0.5)',
   white: '#FFFFFF',
@@ -27,7 +27,6 @@ export const colors = {
 export const font = {
   regular: 'AtkinsonHyperlegibleNext_400Regular',
   bold: 'AtkinsonHyperlegibleNext_700Bold',
-  brand: 'BricolageGrotesque_800ExtraBold', // "Tend" wordmark only
 };
 
 export const radius = { card: 16, input: 14, back: 14, pill: 999, day: 14, sheet: 28 };

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Tend** (formerly Vela; old names remain in docs, the repo folder and specs): a Spanish-language home-nursing app built with Expo (React Native + TypeScript), expo-router and Supabase (Postgres + RLS + realtime). One app, two roles: **nurse (enfermera)** records vitals, doses, handoffs and the care plan; **family (familiar)** is read-only. The same code runs on iOS, Android and web. All UI copy is Spanish.
+**Oliva** (formerly Tend, before that Vela; old names remain in docs, the repo folder, specs, the Expo slug/scheme and the `com.tend.app` bundle IDs): a Spanish-language home-nursing app built with Expo (React Native + TypeScript), expo-router and Supabase (Postgres + RLS + realtime). One app, two roles: **nurse (enfermera)** records vitals, doses, handoffs and the care plan; **family (familiar)** is read-only. The same code runs on iOS, Android and web. All UI copy is Spanish.
 
 A separate repo, **vela-web**, shares the same Supabase project but still uses the legacy tables (`vitals`, `medications`, `medication_plans`, free-text `patients.conditions`). Don't drop or narrow those tables or their RLS.
 

@@ -19,7 +19,7 @@ const ROLES: [Role, string, string][] = [
   ['nurse', 'Soy enfermera o enfermero', 'Anoto los signos, la medicación y cómo va el turno.'],
   ['family', 'Soy familiar', 'Quiero saber cómo está mi ser querido.'],
 ];
-const ROLE_Q = '¿Cómo vas a usar Tend?';
+const ROLE_Q = '¿Cómo vas a usar Oliva?';
 
 // Back button + "Paso n de 3" + the 3-segment bar (decorative; the words say it).
 function Steps({ n, onBack }: { n: number; onBack: () => void }) {

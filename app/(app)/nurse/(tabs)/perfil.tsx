@@ -148,7 +148,7 @@ export default function NursePerfil() {
               variant="secondary"
               height={52}
               size={17}
-              onPress={() => Share.share({ message: `Únete al cuidado de ${short} en Tend. Código: ${code}` })}
+              onPress={() => Share.share({ message: `Únete al cuidado de ${short} en Oliva. Código: ${code}` })}
             />
           </>
         ) : loaded ? (
