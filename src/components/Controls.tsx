@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Pressable, TextInput, StyleSheet, Platform, AccessibilityInfo, type StyleProp, type ViewStyle, type TextInputProps } from 'react-native';
+import { View, Pressable, TextInput, StyleSheet, AccessibilityInfo, type StyleProp, type ViewStyle, type TextInputProps } from 'react-native';
 import type { ReactNode } from 'react';
 import { colors, font, radius } from '@/theme';
 import { useTextScale } from '@/features/settings/textScale';
@@ -10,7 +10,7 @@ import { Icon, type IconName } from './Icon';
 // (Android announces them through accessibilityLiveRegion).
 export function useAnnounce(text: string | null | undefined) {
   useEffect(() => {
-    if (text && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(text);
+    if (text && process.env.EXPO_OS === 'ios') AccessibilityInfo.announceForAccessibility(text);
   }, [text]);
 }
 
@@ -190,17 +190,17 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 14, borderRadius: radius.pill },
   switchRow: {
     flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 72, paddingVertical: 14, paddingHorizontal: 16,
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card,
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card, borderCurve: 'continuous',
   },
   track: { width: 56, height: 32, borderRadius: radius.pill, padding: 3, flexDirection: 'row', alignItems: 'center' },
-  thumb: { width: 26, height: 26, borderRadius: radius.pill, backgroundColor: colors.white, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 1.5, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  thumb: { width: 26, height: 26, borderRadius: radius.pill, backgroundColor: colors.white, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)' },
   checkRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 14, minHeight: 56, padding: 14,
-    borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.input, backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.input, borderCurve: 'continuous', backgroundColor: colors.surface,
   },
-  box: { width: 28, height: 28, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  box: { width: 28, height: 28, borderRadius: 8, borderCurve: 'continuous', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   input: {
-    flex: 1, minWidth: 0, minHeight: 56, borderRadius: radius.input, paddingHorizontal: 16,
+    flex: 1, minWidth: 0, minHeight: 56, borderRadius: radius.input, borderCurve: 'continuous', paddingHorizontal: 16,
     backgroundColor: colors.surface, color: colors.ink, fontFamily: font.regular,
   },
 });

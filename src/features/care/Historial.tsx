@@ -146,7 +146,7 @@ function SummaryLine({ icon, text }: { icon: IconName; text: string }) {
 const s = StyleSheet.create({
   strip: { flexDirection: 'row', gap: 4 },
   day: {
-    flex: 1, minWidth: 0, minHeight: 70, borderRadius: radius.day, paddingVertical: 6,
+    flex: 1, minWidth: 0, minHeight: 70, borderRadius: radius.day, borderCurve: 'continuous', paddingVertical: 6,
     alignItems: 'center', justifyContent: 'center', gap: 2,
   },
   daySel: { backgroundColor: colors.pri, borderWidth: 2, borderColor: colors.pri },
@@ -157,5 +157,5 @@ const s = StyleSheet.create({
   summary: { paddingVertical: 14, paddingHorizontal: 16 },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card },
+  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, borderCurve: 'continuous' },
 });

@@ -361,7 +361,7 @@ const s = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cond: { borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: colors.priSoft },
   card: {
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card,
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card, borderCurve: 'continuous',
     paddingVertical: 14, paddingHorizontal: 16, gap: 8,
   },
   cardEditing: { borderWidth: 2, borderColor: colors.pri },
@@ -373,11 +373,11 @@ const s = StyleSheet.create({
   },
   freq: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingTop: 2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { borderRadius: 8, paddingVertical: 4, paddingHorizontal: 9, borderWidth: 1.5, borderColor: colors.line },
+  tag: { borderRadius: 8, borderCurve: 'continuous', paddingVertical: 4, paddingHorizontal: 9, borderWidth: 1.5, borderColor: colors.line },
   editor: { gap: 12, paddingTop: 10, borderTopWidth: 1.5, borderTopColor: colors.line },
   rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   input: {
-    width: 96, minHeight: 52, borderWidth: 1.5, borderColor: colors.field, borderRadius: 12, paddingHorizontal: 12,
+    width: 96, minHeight: 52, borderWidth: 1.5, borderColor: colors.field, borderRadius: 12, borderCurve: 'continuous', paddingHorizontal: 12,
     backgroundColor: colors.surface, color: colors.ink, fontFamily: font.bold,
   },
   focused: { borderColor: colors.focus, borderWidth: 2.5 },
@@ -386,11 +386,11 @@ const s = StyleSheet.create({
   audit: { marginTop: -6, marginLeft: 28 },
   condRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 12, paddingHorizontal: 16,
-    borderRadius: radius.card, borderWidth: 1.5, borderColor: colors.field, backgroundColor: colors.surface,
+    borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.field, backgroundColor: colors.surface,
   },
   condHas: { borderColor: colors.line, backgroundColor: colors.bg },
-  sugg: { borderRadius: radius.card, borderColor: colors.field },
+  sugg: { borderRadius: radius.card, borderCurve: 'continuous', borderColor: colors.field },
   suggIn: { borderColor: colors.line, backgroundColor: colors.bg },
   suggOn: { borderWidth: 2, borderColor: colors.pri, backgroundColor: colors.priSoft },
-  disclaimer: { paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.input },
+  disclaimer: { paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.input, borderCurve: 'continuous' },
 });

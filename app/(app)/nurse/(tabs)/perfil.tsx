@@ -164,5 +164,5 @@ export default function NursePerfil() {
 const s = StyleSheet.create({
   me: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   fields: { flexDirection: 'row', gap: 12 },
-  code: { padding: 10, borderRadius: 12, backgroundColor: colors.bg },
+  code: { padding: 10, borderRadius: 12, borderCurve: 'continuous', backgroundColor: colors.bg },
 });

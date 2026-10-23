@@ -112,6 +112,6 @@ const s = StyleSheet.create({
   card: { paddingVertical: 12, paddingHorizontal: 14 },
   head: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingVertical: 5, paddingHorizontal: 9 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, borderCurve: 'continuous', paddingVertical: 5, paddingHorizontal: 9 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

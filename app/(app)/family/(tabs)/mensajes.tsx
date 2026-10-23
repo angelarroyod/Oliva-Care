@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert, StyleSheet, AccessibilityInfo } from 'react-native';
+import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Alert, StyleSheet, AccessibilityInfo } from 'react-native';
 import { colors, font, radius } from '@/theme';
 import { Screen } from '@/components/Screen';
 import { T, H1 } from '@/components/T';
@@ -57,7 +57,7 @@ export default function Mensajes() {
 
   return (
     <Screen bottomInset={false} scroll={false}>
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.flex} behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}>
         <View style={s.header}>
           <Avatar initials={nurse ? initialsOf(nurse.name) : '?'} size={44} />
           <View style={s.flex}>

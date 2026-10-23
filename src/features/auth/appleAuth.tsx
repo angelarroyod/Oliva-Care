@@ -7,6 +7,8 @@ import { radius } from '@/theme';
 // Sign in with Apple needs the native module, which is absent in Expo Go.
 // Render only on iOS in a native/dev build; otherwise render nothing.
 const isExpoGo = Constants.appOwnership === 'expo';
+// Platform.OS, not process.env.EXPO_OS: Babel inlines EXPO_OS at build time, and the
+// off-iOS test in __tests__/apple-auth.test.tsx flips Platform.OS at runtime.
 const enabled = Platform.OS === 'ios' && !isExpoGo;
 
 // "Continuar con Apple": Apple's own black button, as a 56px pill. A cancelled

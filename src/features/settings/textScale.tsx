@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { readPref, writePref } from '@/lib/prefs';
 
 // In-app text size (Configuración → Tamaño del texto), 100–200 % in steps of 10.
@@ -28,4 +28,4 @@ export function TextScaleProvider({ children }: { children: ReactNode }) {
   return <TextScaleContext.Provider value={{ pct, setPct }}>{children}</TextScaleContext.Provider>;
 }
 
-export const useTextScale = () => useContext(TextScaleContext);
+export const useTextScale = () => use(TextScaleContext);

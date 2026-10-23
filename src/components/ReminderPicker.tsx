@@ -137,15 +137,15 @@ function StepButton({ icon, label, disabled, onPress }: { icon: 'minus' | 'plus'
 
 const s = StyleSheet.create({
   root: { gap: 10 },
-  mode: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.input },
+  mode: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.input, borderCurve: 'continuous' },
   ring: { width: 26, height: 26, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 12, height: 12, borderRadius: radius.pill },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { minWidth: 64 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   step: {
-    width: 56, height: 56, borderRadius: radius.back, borderWidth: 1.5, borderColor: colors.field,
+    width: 56, height: 56, borderRadius: radius.back, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.field,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  preview: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.input, backgroundColor: colors.priSoft },
+  preview: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.input, borderCurve: 'continuous', backgroundColor: colors.priSoft },
 });

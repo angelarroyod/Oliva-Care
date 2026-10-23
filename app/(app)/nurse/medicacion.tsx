@@ -365,14 +365,14 @@ function DoseCard({ d, what, look, busy, onGive, onSkip }: { d: Dose; what: stri
 
 const s = StyleSheet.create({
   section: { gap: 10 },
-  card: { borderRadius: radius.card, paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
+  card: { borderRadius: radius.card, borderCurve: 'continuous', paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   circle: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   right: { alignItems: 'flex-end', gap: 2 },
   num: { fontVariant: ['tabular-nums'] },
   buttons: { flexDirection: 'row', gap: 8 },
   flex: { flex: 1, paddingHorizontal: 12 },
-  empty: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, padding: 16 },
+  empty: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, borderCurve: 'continuous', padding: 16 },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   info: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
 });

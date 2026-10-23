@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 import { env } from './env';
@@ -30,7 +29,7 @@ const webBackend: KV = {
   removeItem: (k) => { if (typeof localStorage !== 'undefined') localStorage.removeItem(k); },
 };
 
-const storage = Platform.OS === 'web' ? makeStorage(webBackend) : nativeStorage;
+const storage = process.env.EXPO_OS === 'web' ? makeStorage(webBackend) : nativeStorage;
 
 export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
   auth: {

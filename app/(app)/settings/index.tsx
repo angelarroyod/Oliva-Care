@@ -116,12 +116,12 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   scaleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   scaleBtn: {
-    width: 56, height: 56, borderRadius: radius.input, borderWidth: 1.5, borderColor: colors.field,
+    width: 56, height: 56, borderRadius: radius.input, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.field,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
   row: {
     minHeight: 64, paddingVertical: 14, paddingHorizontal: 16, justifyContent: 'center',
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card,
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.card, borderCurve: 'continuous',
   },
   delete: { marginTop: 8 },
   list: { gap: 8 },

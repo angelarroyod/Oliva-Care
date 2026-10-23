@@ -107,7 +107,7 @@ export function ProgressBar({ value, max, label }: { value: number; max: number;
 
 const s = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' },
-  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: radius.card, paddingVertical: 14, paddingHorizontal: 16 },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: radius.card, borderCurve: 'continuous', paddingVertical: 14, paddingHorizontal: 16 },
   track: { height: 10, backgroundColor: colors.line, borderRadius: radius.pill, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.pri, borderRadius: radius.pill },
 });

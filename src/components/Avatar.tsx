@@ -17,7 +17,7 @@ export function Avatar({
   rounded?: number;
 }) {
   return (
-    <View style={[s.center, { width: size, height: size, borderRadius: rounded, backgroundColor: bg }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View style={[s.center, { width: size, height: size, borderRadius: rounded, borderCurve: rounded < size / 2 ? 'continuous' : undefined, backgroundColor: bg }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <T size={Math.round(size * 0.33)} bold color={color} allowFontScaling={false}>
         {initials}
       </T>

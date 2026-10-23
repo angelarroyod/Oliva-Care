@@ -170,12 +170,12 @@ function Bullet({ children }: { children: string }) {
 const s = StyleSheet.create({
   rows: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pill: { minWidth: 64, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, backgroundColor: colors.priSoft },
+  pill: { minWidth: 64, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, borderCurve: 'continuous', backgroundColor: colors.priSoft },
   num: { fontVariant: ['tabular-nums'] },
   item: { flexDirection: 'row', gap: 6 },
   marker: { width: 18 },
   cross: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, paddingHorizontal: 14,
-    borderRadius: radius.input, borderWidth: 2, borderColor: colors.warn, backgroundColor: colors.warnSoft,
+    borderRadius: radius.input, borderCurve: 'continuous', borderWidth: 2, borderColor: colors.warn, backgroundColor: colors.warnSoft,
   },
 });

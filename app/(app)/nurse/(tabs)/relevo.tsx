@@ -175,7 +175,7 @@ function Eyebrow({ children, color }: { children: string; color: string }) {
 
 const s = StyleSheet.create({
   done: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: radius.card,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: radius.card, borderCurve: 'continuous',
     backgroundColor: colors.priSoft, borderWidth: 2, borderColor: colors.ok,
   },
   doneIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.pri, alignItems: 'center', justifyContent: 'center' },
@@ -187,6 +187,6 @@ const s = StyleSheet.create({
   tlDot: { position: 'absolute', left: -8, top: 4, width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: colors.bg },
   itemHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   num: { fontVariant: ['tabular-nums'] },
-  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card },
+  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, borderCurve: 'continuous' },
   sheetItem: { flexDirection: 'row', gap: 10, paddingLeft: 4 },
 });
