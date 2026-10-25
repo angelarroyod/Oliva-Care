@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, Alert, type TextInputProps } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, type TextInputProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
 import { T, H2 } from '@/components/T';
@@ -19,6 +19,7 @@ import type { ConditionKind, ConditionRow, VitalKind, VitalPlanRow } from '@/fea
 import { useTextScale } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
 import { mutate, saved } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, font, radius } from '@/theme';
 
 type SheetState = null | { t: 'cond' } | { t: 'sugg'; c: ConditionKind; sel: VitalKind[] };
@@ -56,6 +57,7 @@ export default function PlanScreen() {
   const canEdit = role === 'nurse';
   const [edit, setEdit] = useState<Edit | null>(null);
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [condErr, setCondErr] = useState<string | null>(null); // shown in the open sheet
   const [busy, setBusy] = useState(false);
   // One Modal whose content switches (iOS can't present a second Modal while the
   // first is dismissing). Keeps the last content while it fades out.
@@ -82,7 +84,7 @@ export default function PlanScreen() {
       'vital_plans',
     );
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setEdit({ ...edit, err });
     setEdit(null);
     toast.show(saved(`Rango de ${lc(VITALS[k].short)} guardado. El formulario de signos ya lo usa.`));
   };
@@ -104,7 +106,7 @@ export default function PlanScreen() {
       if (err) await mutate(supabase.from('patient_conditions').delete().eq('patient_id', pid).eq('condition', c), 'patient_conditions', 'vital_plans');
     }
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setCondErr(err);
     setSheet(null);
     const name = CONDITIONS[c].name;
     const asked = added.filter((sg) => sg.inRoutine).map((sg) => lc(VITALS[sg.kind].name));
@@ -122,7 +124,7 @@ export default function PlanScreen() {
       if (!undoErr && inserted.length) {
         undoErr = await mutate(supabase.from('vital_plans').delete().eq('patient_id', pid).in('kind', inserted), 'patient_conditions', 'vital_plans');
       }
-      if (undoErr) Alert.alert('No se pudo deshacer', undoErr);
+      if (undoErr) toast.show(failedTo('No se pudo deshacer.', undoErr));
     });
   };
 
@@ -143,7 +145,7 @@ export default function PlanScreen() {
         ) : (
           <T size={15} color={colors.ink2}>Sin condiciones anotadas.</T>
         )}
-        {canEdit ? <Button label="Añadir condición" icon="plus" variant="secondary" height={52} size={17} onPress={() => setSheet({ t: 'cond' })} /> : null}
+        {canEdit ? <Button label="Añadir condición" icon="plus" variant="secondary" height={52} size={17} onPress={() => { setCondErr(null); setSheet({ t: 'cond' }); }} /> : null}
       </Card>
 
       <View style={{ gap: 10 }}>
@@ -208,7 +210,7 @@ export default function PlanScreen() {
           visible={!!sheet}
           title={sh.t === 'sugg' ? CONDITIONS[sh.c].name : 'Añadir una condición'}
           sub={sh.t === 'sugg' ? `Sugerencias para el plan de ${short}. Quita las que no necesite.` : 'Te sugeriremos qué signos medir y en qué rango.'}
-          onClose={() => setSheet(null)}
+          onClose={() => { setCondErr(null); setSheet(null); }}
         >
           {sh.t === 'sugg' ? (
             <Suggestions
@@ -216,6 +218,7 @@ export default function PlanScreen() {
               c={sh.c}
               sel={sh.sel}
               busy={busy}
+              err={condErr}
               onToggle={(k) => setSheet({ ...sh, sel: sh.sel.includes(k) ? sh.sel.filter((x) => x !== k) : [...sh.sel, k] })}
               onAccept={() => addCondition(sh.c, sh.sel)}
               onOnly={() => addCondition(sh.c, [])}
@@ -304,12 +307,13 @@ function RangeInput(props: TextInputProps) {
 }
 
 function Suggestions({
-  plan, c, sel, busy, onToggle, onAccept, onOnly,
+  plan, c, sel, busy, err, onToggle, onAccept, onOnly,
 }: {
   plan: Plan;
   c: ConditionKind;
   sel: VitalKind[];
   busy: boolean;
+  err: string | null;
   onToggle: (k: VitalKind) => void;
   onAccept: () => void;
   onOnly: () => void;
@@ -347,6 +351,7 @@ function Suggestions({
           Son sugerencias habituales, no una indicación médica. Confirma los rangos con su médico; podrás cambiarlos cuando quieras.
         </T>
       </View>
+      {err ? <ErrorText>{err}</ErrorText> : null}
       <Button
         label={n ? `Añadir con ${n} ${n === 1 ? 'signo nuevo' : 'signos nuevos'}` : `Añadir ${CONDITIONS[c].name}`}
         onPress={onAccept}

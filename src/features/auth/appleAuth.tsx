@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { errorText } from '@/lib/errors';
 import { radius } from '@/theme';
 
 // Sign in with Apple needs the native module, which is absent in Expo Go.
@@ -14,6 +15,8 @@ const enabled = Platform.OS === 'ios' && !isExpoGo;
 // "Continuar con Apple": Apple's own black button, as a 56px pill. A cancelled
 // sheet is not an error; anything else is reported through onError. On success
 // go to "/" like the email path: index routes a new user (no membership) to onboarding.
+const APPLE_FAILED = 'No se pudo entrar con Apple. Vuelve a intentarlo.';
+
 export function AppleButton({ onError }: { onError?: (message: string) => void }) {
   const router = useRouter();
   if (!enabled) return null;
@@ -29,11 +32,11 @@ export function AppleButton({ onError }: { onError?: (message: string) => void }
       });
       if (!cred.identityToken) return;
       const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken });
-      if (error) onError?.(error.message);
+      if (error) onError?.(errorText(error, APPLE_FAILED)!);
       else router.replace('/');
     } catch (e) {
       const err = e as { code?: string; message?: string };
-      if (err.code !== 'ERR_REQUEST_CANCELED') onError?.(err.message ?? String(e));
+      if (err.code !== 'ERR_REQUEST_CANCELED') onError?.(APPLE_FAILED);
     }
   };
   return (

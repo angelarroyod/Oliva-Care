@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, Alert, Share } from 'react-native';
+import { View, StyleSheet, Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { T, H1 } from '@/components/T';
 import { Avatar, initialsOf } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card, RowLink } from '@/components/Card';
-import { Field } from '@/components/Controls';
+import { ErrorText, Field } from '@/components/Controls';
 import { useToast } from '@/components/Toast';
 import { useCare } from '@/features/care/hooks';
 import { shiftKind, shiftLabel } from '@/features/care/shifts';
@@ -35,6 +35,8 @@ export default function NursePerfil() {
   const [to, setTo] = useState('');
   const [errors, setErrors] = useState<{ from?: string; to?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [shiftErr, setShiftErr] = useState<string | null>(null);
+  const [codeErr, setCodeErr] = useState<string | null>(null);
 
   // Invite code: the newest unexpired, unaccepted family invite.
   const [code, setCode] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export default function NursePerfil() {
     setFrom(meNurse?.start ?? '');
     setTo(meNurse?.end ?? '');
     setErrors({});
+    setShiftErr(null);
     setEditing(true);
   }
 
@@ -72,7 +75,7 @@ export default function NursePerfil() {
     setSaving(true);
     const err = await mutate(supabase.rpc('set_my_shift', { p_patient: pid, p_start: start, p_end: end }), 'care_memberships');
     setSaving(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setShiftErr(err);
     setEditing(false);
     toast.show(saved('Turno guardado.'));
   }
@@ -93,7 +96,8 @@ export default function NursePerfil() {
       'invites',
     );
     setSaving(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setCodeErr(err);
+    setCodeErr(null);
     setCode(next);
   }
 
@@ -126,6 +130,7 @@ export default function NursePerfil() {
                 keyboardType="numbers-and-punctuation" maxLength={5} style={{ flex: 1 }}
               />
             </View>
+            {shiftErr ? <ErrorText>{shiftErr}</ErrorText> : null}
             <Button label="Guardar turno" onPress={submitShift} disabled={saving} />
             {kind ? <Button label="Quitar turno fijo" variant="neutral" onPress={() => saveShift(null, null)} disabled={saving} /> : null}
             <Button label="Cancelar" variant="neutral" height={52} onPress={() => setEditing(false)} />
@@ -152,7 +157,10 @@ export default function NursePerfil() {
             />
           </>
         ) : loaded ? (
-          <Button label="Crear código" onPress={createCode} disabled={saving} />
+          <>
+            {codeErr ? <ErrorText>{codeErr}</ErrorText> : null}
+            <Button label="Crear código" onPress={createCode} disabled={saving} />
+          </>
         ) : null}
       </Card>
 

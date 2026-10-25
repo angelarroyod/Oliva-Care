@@ -56,7 +56,8 @@ In the app, the interface stays in **Atkinson Hyperlegible Next**.
 
 - `build_kit.py` regenerates every master SVG (geometry and colours live at the top).
 - `export/`: one-colour variants, PNGs, and the web icon set (`favicon.ico`, PWA icons, `site.webmanifest`, `head-snippet.html`).
-- `expo/`: the app icon, Android adaptive icons, splash and favicon, already copied into `/assets`.
+- `expo/`: Android adaptive icons, splash and favicon, already copied into `/assets`.
+- `../app-icon/`: the iOS app icon (option A, "La O en capas"): Icon Composer layers in `a-capas/`, and light, dark and tinted PNGs in `export/`, copied to `/assets/icon*.png` and wired through `ios.icon` in `app.json`.
 - `oliva-board.html` and `slides/`: the presentation board with mockups.
 
 ## Open items

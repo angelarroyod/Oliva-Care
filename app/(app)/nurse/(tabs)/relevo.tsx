@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { Screen, PageHeader } from '@/components/Screen';
 import { T, H2 } from '@/components/T';
@@ -7,6 +7,7 @@ import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
+import { ErrorText } from '@/components/Controls';
 import { useToast } from '@/components/Toast';
 import { useCare, useSince, useSchedules, useDoseRows, useReadings, useEvents, useHandoffs } from '@/features/care/hooks';
 import { nextNurse, shiftEnd, shiftKind, shiftStart } from '@/features/care/shifts';
@@ -15,6 +16,7 @@ import { dosesSpan, handoffBrief, myHandoff, shiftLog } from '@/features/care/ne
 import { cap, hhmm } from '@/features/care/clock';
 import { supabase } from '@/lib/supabase';
 import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, radius } from '@/theme';
 
 const TWO_HOURS = 2 * 3_600_000;
@@ -30,6 +32,7 @@ export default function NurseRelevo() {
   const handoffs = useHandoffs(pid, since);
   const [sheet, setSheet] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const kind = meNurse ? shiftKind(meNurse) : null;
   const start = shiftStart(meNurse, now);
@@ -61,13 +64,13 @@ export default function NurseRelevo() {
       'shift_handoffs',
     );
     setBusy(false);
+    if (err) return setErr(err); // the sheet stays open with the error in it
     setSheet(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
     const queued = lastQueued();
     toast.show(saved(`Turno entregado${next ? ` a ${next.short}` : ''}.`), async () => {
       if (unqueue(queued)) return;
       const e = await mutate(supabase.from('shift_handoffs').delete().eq('id', id), 'shift_handoffs');
-      if (e) Alert.alert('No se pudo deshacer', e);
+      if (e) toast.show(failedTo('No se pudo deshacer.', e));
     });
   }
 
@@ -78,7 +81,7 @@ export default function NurseRelevo() {
       {handed ? (
         <View style={s.done}>
           <View style={s.doneIcon}>
-            <Icon name="check" size={16} color={colors.white} strokeWidth={2.8} />
+            <Icon name="check" size={16} color={colors.onPri} strokeWidth={2.8} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
             <T size={17} bold color={colors.pri}>
@@ -141,7 +144,7 @@ export default function NurseRelevo() {
       </View>
 
       {handed ? null : (
-        <Button label={`Entregar turno${next ? ` a ${next.short}` : ''}`} onPress={() => setSheet(true)} disabled={!pid} />
+        <Button label={`Entregar turno${next ? ` a ${next.short}` : ''}`} onPress={() => { setErr(null); setSheet(true); }} disabled={!pid} />
       )}
 
       <Sheet visible={sheet} title={`¿Entregar el turno${next ? ` a ${next.short}` : ''}?`} onClose={() => setSheet(false)}>
@@ -158,6 +161,7 @@ export default function NurseRelevo() {
             </View>
           ))}
         </View>
+        {err ? <ErrorText>{err}</ErrorText> : null}
         <Button label="Sí, entregar turno" onPress={handOff} disabled={busy} />
       </Sheet>
     </Screen>

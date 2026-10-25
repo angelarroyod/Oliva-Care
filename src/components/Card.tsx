@@ -1,8 +1,9 @@
-import { View, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 import { colors, radius } from '@/theme';
 import { T } from './T';
 import { Icon, type IconName } from './Icon';
+import { PressScale } from './PressScale';
 
 // Card tones mirror the status table: plain (1.5 line), state cards (2px).
 export type CardTone = 'plain' | 'pri' | 'warn' | 'alert' | 'unrec' | 'pending' | 'soft';
@@ -52,12 +53,7 @@ export function RowLink({
   accessibilityLabel?: string;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [s.row, pressed && { opacity: 0.85 }]}
-    >
+    <PressScale onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel} style={s.row}>
       {icon ? (
         <View style={s.tile}>
           <Icon name={icon} size={20} color={colors.pri} />
@@ -68,7 +64,7 @@ export function RowLink({
         {sub ? <T size={15} color={colors.ink2} lh={1.35}>{sub}</T> : null}
       </View>
       <Icon name="chevronRight" size={20} color={colors.ink2} strokeWidth={2.4} />
-    </Pressable>
+    </PressScale>
   );
 }
 

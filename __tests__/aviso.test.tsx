@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { OFFLINE_ERROR } from '@/lib/errors';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import Aviso from '../app/(app)/nurse/aviso/[id]';
 import { ToastProvider } from '@/components/Toast';
@@ -105,18 +105,17 @@ test('Dejar de dar stamps the suspension after confirming', async () => {
   expect(screen.getByText('Levotiroxina: ya no se dará.')).toBeTruthy();
 });
 
-test('failed saves show the error and stay on the screen', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  mockEq.mockImplementation(() => Promise.resolve({ error: { message: 'Sin conexión' } }));
+test('failed saves show the error inline and stay on the screen', async () => {
+  mockEq.mockImplementation(() => Promise.resolve({ error: { message: 'Network request failed' } }));
   show();
   fireEvent.press(screen.getByText('Guardar aviso'));
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo guardar', 'Sin conexión'));
+  expect(await screen.findByText(OFFLINE_ERROR)).toBeTruthy();
 
   fireEvent.press(screen.getByText('Dejar de dar este medicamento'));
+  expect(screen.queryByText(OFFLINE_ERROR)).toBeNull(); // the sheet opens clean
   fireEvent.press(screen.getByText('Sí, dejar de darlo'));
-  await waitFor(() => expect(alert).toHaveBeenCalledTimes(2));
+  expect(await screen.findByText(OFFLINE_ERROR)).toBeTruthy();
   expect(screen.getByText('¿Dejar de dar Levotiroxina?')).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
   expect(screen.queryByText(/^Aviso guardado/)).toBeNull();
-  alert.mockRestore();
 });

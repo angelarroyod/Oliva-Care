@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { errorText } from '@/lib/errors';
 
 type AuthValue = {
   session: Session | null;
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn: AuthValue['signIn'] = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    return { error: errorText(error, 'No se pudo entrar. Vuelve a intentarlo.') };
   };
 
   const signUp: AuthValue['signUp'] = async (email, password, fullName) => {
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { full_name: fullName } },
     });
-    return { error: error?.message ?? null };
+    return { error: errorText(error, 'No se pudo crear la cuenta. Vuelve a intentarlo.') };
   };
 
   const signOut = async () => {

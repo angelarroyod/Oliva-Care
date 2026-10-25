@@ -1,4 +1,5 @@
 import { env } from './env';
+import { errorText } from './errors';
 import { readPref, writePref } from './prefs';
 import { supabase } from './supabase';
 
@@ -108,10 +109,11 @@ function toRequest(p: unknown): Request | null {
   return { method: b.method, url: b.url.href, headers, body: b.body };
 }
 
-// Awaits a Supabase write and returns the error message (or null on success).
+// Awaits a Supabase write and returns what to tell the person, in Spanish
+// (errorText), or null on success. Show it inline, next to what failed.
 // Pass the tables it touched so live lists refresh right away. Offline, the
 // write is queued instead and this returns null (see saved() / unqueue()).
-export async function mutate<T extends { error: { message: string } | null }>(
+export async function mutate<T extends { error: { message: string; code?: string } | null }>(
   p: PromiseLike<T>,
   ...tables: string[]
 ): Promise<string | null> {
@@ -129,7 +131,7 @@ export async function mutate<T extends { error: { message: string } | null }>(
   await flushing; // queued writes go first, so an undo never overtakes its record
   const { error } = await p;
   if (!error && tables.length) invalidate(...tables);
-  return error?.message ?? null;
+  return errorText(error);
 }
 
 export const SAVED_OFFLINE = 'Guardado en el teléfono. Se enviará al volver la conexión.';

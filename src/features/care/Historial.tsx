@@ -14,11 +14,17 @@ import { HISTORY_DAYS, dosesForDay } from './doses';
 import { DAY_WORD, FILTERS, dayStatus, daySummary, eventsForDay, filterEvents, type DayStatus, type HistoryFilter } from './timeline';
 
 // Historial tab (nurse and family): the last 7 days, one day at a time.
-const DOT: Record<DayStatus, string> = {
-  alert: colors.danger, warn: colors.warn, unrec: colors.field, ok: colors.ok, empty: colors.line,
+// Each day's status is a shape as well as a colour (the same icons as the
+// family week strip); an empty day shows nothing.
+const DAY_ICON: Record<DayStatus, { icon?: IconName; ink: string }> = {
+  alert: { icon: 'alert', ink: colors.danger },
+  warn: { icon: 'warn', ink: colors.warn },
+  unrec: { icon: 'clock', ink: colors.field },
+  ok: { icon: 'check', ink: colors.ok },
+  empty: { ink: colors.line },
 };
 const TODAY = HISTORY_DAYS - 1; // index of today in the strip (rightmost)
-type TabNav = { addListener(type: 'tabPress', cb: (e: { preventDefault(): void }) => void): () => void };
+type TabNav = { addListener(type: 'tabPress', cb: (e: { preventDefault?(): void }) => void): () => void };
 
 export default function Historial() {
   const { pid, role, nurses, names, now } = useCare();
@@ -28,10 +34,12 @@ export default function Historial() {
 
   // The tab bar re-sends the route's last params, so a tap on "Historial" would reopen
   // the old day and filter. Like the prototype, the tab always opens today with Todo.
+  // The native tab bar can't cancel its switch (no preventDefault): it focuses the
+  // tab after this navigate has already cleared the params.
   useEffect(() => {
     if (!role) return;
     return navigation.addListener('tabPress', (e) => {
-      e.preventDefault();
+      e.preventDefault?.();
       router.navigate(role === 'nurse' ? '/nurse/historial' : '/family/historial');
     });
   }, [navigation, router, role]);
@@ -82,7 +90,8 @@ export default function Historial() {
         {days.map((d, i) => {
           const selected = i === sel;
           const st: DayStatus = pid ? dayStatus(perDay[i]) : 'empty';
-          const ink = selected ? colors.white : colors.ink;
+          const ink = selected ? colors.onPri : colors.ink;
+          const mark = DAY_ICON[st];
           return (
             <Pressable
               key={localDate(d)}
@@ -94,7 +103,9 @@ export default function Historial() {
             >
               <T size={13} bold color={ink}>{WEEKDAYS_SHORT[d.getDay()]}</T>
               <T size={19} bold color={ink} style={s.num}>{d.getDate()}</T>
-              <View style={[s.dot, { backgroundColor: DOT[st] }]} />
+              <View style={s.mark}>
+                {mark.icon ? <Icon name={mark.icon} size={16} color={selected ? colors.onPri : mark.ink} strokeWidth={2.6} /> : null}
+              </View>
             </Pressable>
           );
         })}
@@ -152,8 +163,7 @@ const s = StyleSheet.create({
   daySel: { backgroundColor: colors.pri, borderWidth: 2, borderColor: colors.pri },
   dayIdle: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.line },
   num: { fontVariant: ['tabular-nums'] },
-  // The ring is white on both looks: invisible on white, a halo on the pri fill.
-  dot: { width: 12, height: 12, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.white },
+  mark: { width: 16, height: 16 }, // keeps empty days the same height
   summary: { paddingVertical: 14, paddingHorizontal: 16 },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

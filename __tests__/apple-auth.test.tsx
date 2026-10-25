@@ -61,7 +61,7 @@ test('iOS: a Supabase error is reported and does not navigate', async () => {
   const onError = jest.fn();
   render(<AppleButton onError={onError} />);
   fireEvent.press(screen.getByTestId('apple'));
-  await waitFor(() => expect(onError).toHaveBeenCalledWith('Token inválido'));
+  await waitFor(() => expect(onError).toHaveBeenCalledWith('No se pudo entrar con Apple. Vuelve a intentarlo.'));
   expect(mockReplace).not.toHaveBeenCalled();
 });
 
@@ -74,7 +74,7 @@ test('iOS: a cancelled sheet is silent, other failures are reported', async () =
   await waitFor(() => expect(mockSignInAsync).toHaveBeenCalledTimes(1));
   mockSignInAsync.mockRejectedValueOnce({ code: 'ERR_REQUEST_FAILED', message: 'Apple falló' });
   fireEvent.press(screen.getByTestId('apple'));
-  await waitFor(() => expect(onError).toHaveBeenCalledWith('Apple falló'));
+  await waitFor(() => expect(onError).toHaveBeenCalledWith('No se pudo entrar con Apple. Vuelve a intentarlo.'));
   expect(onError).toHaveBeenCalledTimes(1);
   expect(mockReplace).not.toHaveBeenCalled();
 });

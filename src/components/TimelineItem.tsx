@@ -14,7 +14,7 @@ const PLAIN_DOT: Dot = { bg: colors.surface, ink: colors.pri, border: colors.lin
 const WARN_DOT: Dot = { bg: colors.warnSoft, ink: colors.warnInk, border: colors.warn };
 
 const ST: Record<EventStatus, { card: CardTone; dot: Dot; badge?: Tone; word?: string }> = {
-  given: { card: 'plain', badge: 'ok', word: 'Dada', dot: { bg: colors.pri, ink: colors.white, border: colors.pri } },
+  given: { card: 'plain', badge: 'ok', word: 'Dada', dot: { bg: colors.pri, ink: colors.onPri, border: colors.pri } },
   skipped: { card: 'warn', badge: 'skipped', word: 'Omitida', dot: WARN_DOT },
   unrecorded: { card: 'unrec', badge: 'unrec', word: 'Sin registrar', dot: { bg: colors.surface, ink: colors.ink2, border: colors.field } },
   pending: { card: 'pending', badge: 'pending', word: 'Pendiente', dot: { bg: colors.surface, ink: colors.pri, border: colors.pri } },
@@ -24,7 +24,7 @@ const ST: Record<EventStatus, { card: CardTone; dot: Dot; badge?: Tone; word?: s
   info: { card: 'plain', dot: PLAIN_DOT },
 };
 // Handoffs carry no badge: priSoft card, filled pri dot.
-const HANDOFF: (typeof ST)[EventStatus] = { card: 'soft', dot: { bg: colors.pri, ink: colors.white, border: colors.pri } };
+const HANDOFF: (typeof ST)[EventStatus] = { card: 'soft', dot: { bg: colors.pri, ink: colors.onPri, border: colors.pri } };
 
 const KIND_ICON: Record<EventKind, IconName> = { med: 'pill', vitals: 'pulse', note: 'message', handoff: 'clipboard' };
 

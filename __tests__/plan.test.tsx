@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
 import Plan from '../app/(app)/plan';
 import type { ConditionRow, VitalPlanRow } from '@/features/care/types';
@@ -65,7 +64,6 @@ beforeEach(() => {
   mockRole = 'nurse';
   mockFail = null;
   jest.clearAllMocks();
-  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 });
 const ui = () => render(<ToastProvider><Plan /></ToastProvider>);
 
@@ -187,7 +185,7 @@ test('a failed range save keeps the editor open and says so', async () => {
   fireEvent.press(screen.getByLabelText('Cambiar rango de glucosa'));
   fireEvent.changeText(screen.getByLabelText('Antes de comer o en ayunas: mínimo'), '80');
   fireEvent.press(screen.getByText('Guardar rango'));
-  await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('No se pudo guardar', expect.any(String)));
+  expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy(); // inline, next to the buttons
   expect(screen.getByText('Guardar rango')).toBeTruthy();
   expect(screen.getByLabelText('Antes de comer o en ayunas: mínimo').props.value).toBe('80');
   expect(screen.queryByText(/guardado/)).toBeNull();
@@ -199,7 +197,7 @@ test('if the plan rows fail, the new condition is removed again', async () => {
   fireEvent.press(screen.getByText('Añadir condición'));
   fireEvent.press(screen.getByText('EPOC / asma'));
   fireEvent.press(screen.getByText('Añadir con 3 signos nuevos'));
-  await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('No se pudo guardar', expect.any(String)));
+  expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy(); // inline, next to the buttons
   expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.insert', 'vital_plans.upsert', 'patient_conditions.delete']);
   expect(mockCalls[2].filters).toEqual([['eq', 'patient_id', 'p1'], ['eq', 'condition', 'copd_asthma']]);
   expect(screen.queryByText(/añadida/)).toBeNull();
@@ -213,7 +211,7 @@ test('a failed condition insert writes nothing else', async () => {
   fireEvent.press(screen.getByText('Añadir condición'));
   fireEvent.press(screen.getByText('EPOC / asma'));
   fireEvent.press(screen.getByText('Solo añadir la condición'));
-  await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('No se pudo guardar', expect.any(String)));
+  expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy(); // inline, next to the buttons
   expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.insert']);
   expect(screen.queryByText(/añadida/)).toBeNull();
 });

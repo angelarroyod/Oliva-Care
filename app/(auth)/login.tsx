@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { AppleButton } from '@/features/auth/appleAuth';
 import { useAuth } from '@/features/auth/useAuth';
 import { supabase } from '@/lib/supabase';
+import { errorText } from '@/lib/errors';
 import { colors, radius } from '@/theme';
 
 const EMAIL_RE = /.+@.+\..+/;
@@ -48,7 +49,7 @@ export default function Login() {
   const forgot = async () => {
     if (!emailOk) return toast.show('Escribe tu correo y te enviaremos un enlace.');
     const { error } = await supabase.auth.resetPasswordForEmail(mail);
-    toast.show(error ? error.message : `Te enviamos un enlace a ${mail}.`);
+    toast.show(error ? errorText(error, 'No se pudo enviar el enlace. Vuelve a intentarlo.')! : `Te enviamos un enlace a ${mail}.`);
   };
 
   return (

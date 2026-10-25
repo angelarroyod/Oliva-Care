@@ -15,11 +15,16 @@ export type TProps = TextProps & {
   ref?: Ref<Text>; // React 19 passes it through to Text (focus the h1)
 };
 
+// The in-app size multiplies the OS text size. Together they stop at iOS's
+// largest accessibility size (~3.1×), so 200 % in the app × AX5 isn't 6×.
+const MAX_TEXT_SCALE = 3.1;
+
 export function T({ size = 16, bold, color = colors.ink, lh = 1.4, center, style, ...rest }: TProps) {
   const { pct } = useTextScale();
   const fontSize = (size * pct) / 100;
   return (
     <Text
+      maxFontSizeMultiplier={(MAX_TEXT_SCALE * 100) / pct}
       {...rest}
       style={[
         {

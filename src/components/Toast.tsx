@@ -1,7 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
+import Animated, { Easing, FadeIn, FadeInDown, FadeOut, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { colors, shadow } from '@/theme';
 import { T } from './T';
+
+// The toast rises 25 px and fades in (200 ms, strong ease-out) and fades out
+// in place (150 ms). Reduce Motion keeps the fade and drops the rise.
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const ENTER = FadeInDown.duration(200).easing(EASE_OUT);
+const ENTER_REDUCED = FadeIn.duration(200).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
+const EXIT = FadeOut.duration(150).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
 
 // Global toast with an optional "Deshacer" closure; auto-dismisses after 7 s.
 // State lives at the root so a toast survives navigation (save → go home →
@@ -32,13 +40,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export const useToast = () => useContext(ToastContext);
 
-export function ToastHost() {
+export function ToastHost({ bottom = 12 }: { bottom?: number }) {
   const { toast, hide } = useToast();
+  const reduced = useReducedMotion();
   return (
-    <View pointerEvents="box-none" style={s.host} accessibilityLiveRegion="polite">
+    <View pointerEvents="box-none" style={[s.host, { bottom }]} accessibilityLiveRegion="polite">
       {toast ? (
-        <View style={s.toast} accessibilityRole="summary">
-          <T size={15} bold color={colors.white} lh={1.35} style={{ flex: 1 }}>
+        // keyed by id: a new toast replaces the old one with a fresh entrance
+        <Animated.View key={toast.id} entering={reduced ? ENTER_REDUCED : ENTER} exiting={EXIT} style={s.toast} accessibilityRole="summary">
+          <T size={15} bold color={colors.bg} lh={1.35} style={{ flex: 1 }}>
             {toast.text}
           </T>
           {toast.undo ? (
@@ -51,20 +61,20 @@ export function ToastHost() {
               }}
               style={s.undo}
             >
-              <T size={15} bold color={colors.white}>Deshacer</T>
+              <T size={15} bold color={colors.bg}>Deshacer</T>
             </Pressable>
           ) : null}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  host: { position: 'absolute', left: 14, right: 14, bottom: 12 },
+  host: { position: 'absolute', left: 14, right: 14 },
   toast: {
     flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.ink, borderRadius: 16,
     paddingVertical: 10, paddingRight: 10, paddingLeft: 16, ...shadow.toast,
   },
-  undo: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  undo: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
 });

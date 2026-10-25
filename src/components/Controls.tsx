@@ -51,7 +51,7 @@ export function Chip({
   style?: StyleProp<ViewStyle>;
 }) {
   const fill = look === 'fill' && selected;
-  const ink = fill ? colors.white : colors.ink;
+  const ink = fill ? colors.onPri : colors.ink;
   return (
     <Pressable
       onPress={onPress}
@@ -126,7 +126,7 @@ export function CheckRow({
       style={[s.checkRow, style]}
     >
       <View style={[s.box, { backgroundColor: boxBg, borderColor: boxBorder }]}>
-        {checked ? <Icon name="check" size={18} color={colors.white} strokeWidth={3} /> : null}
+        {checked ? <Icon name="check" size={18} color={colors.onPri} strokeWidth={3} /> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>{children}</View>
     </Pressable>

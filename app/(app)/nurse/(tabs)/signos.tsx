@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, Alert, type TextInputProps } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, type TextInputProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
 import { Screen, PageHeader } from '@/components/Screen';
@@ -20,6 +20,7 @@ import type { GlucoseCtx, VitalKind } from '@/features/care/types';
 import { useTextScale } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
 import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, font, radius } from '@/theme';
 
 // Message line look per state (prototype MS table).
@@ -103,7 +104,7 @@ export default function NurseSignos() {
       if (!unqueue(queued)) {
         const undoErr = await mutate(supabase.from('vital_readings').delete().eq('control_id', controlId), 'vital_readings');
         if (undoErr) {
-          Alert.alert('No se pudo deshacer', undoErr);
+          toast.show(failedTo('No se pudo deshacer.', undoErr));
           return;
         }
       }
@@ -256,7 +257,7 @@ function VitalField({
                       accessibilityLabel={`${n} de 10`}
                       style={[s.painBtn, sel ? s.painSel : null]}
                     >
-                      <T size={18} bold color={sel ? colors.white : colors.ink}>{n}</T>
+                      <T size={18} bold color={sel ? colors.onPri : colors.ink}>{n}</T>
                     </Pressable>
                   );
                 })}

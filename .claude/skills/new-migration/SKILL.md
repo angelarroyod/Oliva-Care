@@ -1,7 +1,8 @@
 ---
 name: new-migration
-description: Write the next numbered Supabase migration for Tend, check it against the project's RLS rules, apply it through the dashboard SQL Editor and verify it with the advisors.
+description: Write, review and apply the next Supabase migration for Tend (manual invoke only).
 disable-model-invocation: true
+allowed-tools: mcp__supabase__get_advisors
 argument-hint: <what the migration should do>
 ---
 
@@ -9,11 +10,13 @@ argument-hint: <what the migration should do>
 
 Task: $ARGUMENTS
 
+If the task above is empty, ask the user what the migration should do before step 1.
+
 The live project is shared with vela-web, and the Supabase MCP `apply_migration` always comes back `declined` in this app. Every mobile migration goes through the SQL Editor, so it never shows up in `list_migrations`. Check the tables, not the history.
 
 ## 1. Number and name
 
-- Next number = highest `NNNN_` in `supabase/migrations/` + 1, padded to 4 digits.
+- Next number: run `bash ${CLAUDE_SKILL_DIR}/scripts/migration-info.sh` from the repo root (highest `NNNN_` in `supabase/migrations/` + 1).
 - File: `supabase/migrations/NNNN_<snake_slug>.sql`.
 - Header comment: what it does, what it runs after, whether it's idempotent, and what must be re-run after it (see 0005).
 
@@ -44,24 +47,23 @@ Run `get_advisors` (security and performance) **before** applying, so new warnin
 1. The project ref is in `.mcp.json` (`project_ref=` in the URL). Open `https://supabase.com/dashboard/project/<ref>/sql/new`. The user signs in themselves; never type their credentials.
 2. Ctrl+V doesn't reach the page. Set the editor text with `javascript_tool`:
    `monaco.editor.getModels()[0].setValue(\`…file contents…\`)`. Escape backticks and `${` inside the SQL.
-3. Check integrity before running. In the page, compute the SHA-256 of `monaco.editor.getModels()[0].getValue(1)` (`crypto.subtle.digest`). Locally, compute `sha256sum supabase/migrations/NNNN_*.sql`. They must match. If CRLF/LF is the only difference, normalize and say so.
+3. Check integrity before running. In the page, compute the SHA-256 of `monaco.editor.getModels()[0].getValue(1)` (`crypto.subtle.digest`). Locally run `bash ${CLAUDE_SKILL_DIR}/scripts/migration-info.sh supabase/migrations/NNNN_*.sql`, which strips CR first because Monaco returns LF. The two hashes must match.
 4. Press Run **only after the user has authorized this migration in chat**. A "Potential issue detected" dialog shows up for any `drop … if exists`; confirm it under the same authorization.
-5. Never route DDL through `execute_sql` to get around this flow.
+5. Never route DDL through `execute_sql`; it is deliberately not pre-approved in this skill.
 
 ## 5. Verify
 
 - `execute_sql` (read-only): the new tables, columns, policies and indexes exist (`pg_policies`, `pg_indexes`, `information_schema`).
 - `get_advisors` again and compare with the baseline. Any new warning gets fixed in this file (re-apply, it's idempotent) or explained to the user.
-- `npm run typecheck` and `npx jest --testPathIgnorePatterns '/node_modules/' '<rootDir>/.claude/'`, if app types or queries changed. Not while `npm run web` is bundling (random 5 s timeouts).
+- If app types or queries changed: `npm run typecheck` and `npx jest --testPathIgnorePatterns '/node_modules/' '<rootDir>/.claude/'` (not while `npm run web` is bundling: random 5 s timeouts; the flag replaces jest's default `/node_modules/`, so pass both).
 
 ## 6. Record
 
-- Update the auto-memory `live-supabase-schema-state.md`: the migration is live as of today's date, applied via the SQL Editor, plus any advisor items left on purpose.
+- Update the auto-memory `live-supabase-schema-state.md` in this project's memory directory (see `MEMORY.md`): the migration is live as of today's date, applied via the SQL Editor, plus any advisor items left on purpose.
 - Add the file to the migration list in `README.md` (Run it → Supabase) and in the project layout.
 - Don't commit unless the user asks.
 
 ## Gotchas
 
-- `--testPathIgnorePatterns` on the CLI **replaces** the default `/node_modules/`, so pass both patterns.
 - `.mcp.json` is gitignored (it holds the project ref). Fresh clone or worktree without it → ask the user for the ref; never guess it.
 - Don't retry `apply_migration` after a `declined`; it never succeeds here (see step 4).

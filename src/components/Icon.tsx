@@ -1,5 +1,12 @@
+import { Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/theme';
+
+// Decorative: hidden from screen readers. On web the Svg props land on the DOM
+// <svg>, which only understands aria-hidden.
+const HIDDEN = Platform.OS === 'web'
+  ? ({ 'aria-hidden': true } as const)
+  : ({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' } as const);
 
 // 24×24 round-cap stroke icons from the Tend prototype (constant `I`).
 const PATHS = {
@@ -43,7 +50,7 @@ export function Icon({
   const d = PATHS[name];
   if (!d) return null;
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <Svg width={size} height={size} viewBox="0 0 24 24" {...HIDDEN}>
       <Path d={d} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );

@@ -14,7 +14,7 @@ export function LogoMark({ size = 32 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 256 256">
       <Path d={DISC + leaf} fillRule="evenodd" fill={colors.logoInk} />
-      <Path d={leaf} fill={colors.logoAccent} />
+      <Path d={leaf} fill={colors.logoLeaf} />
     </Svg>
   );
 }
@@ -45,6 +45,19 @@ export function BrandHeader() {
   );
 }
 
+// The signature: the logo's leaf, grown and cropped off the corner of the olive
+// hero. Decorative. 18 % keeps heroSub text over it at 4.6:1; never on the fever hero.
+export function HeroLeaf() {
+  return (
+    <View style={s.heroLeaf} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={320} height={320} viewBox="0 0 256 256">
+        <Path d={LEAF} fill={colors.logoAccent} opacity={0.18} />
+      </Svg>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroLeaf: { position: 'absolute', top: -110, right: -110 }, // the leaf fills the top-right ~110 px, tip cropped
 });

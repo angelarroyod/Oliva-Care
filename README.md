@@ -11,7 +11,7 @@ Built with **Expo (React Native + TypeScript)**, **expo-router** and **Supabase*
 
 ## What's in the Tend redesign
 
-**Accessible identity.** New palette and type ([Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next) for UI, Bricolage Grotesque for the "Tend" wordmark), an animated logo (two hands holding a coral cross) that respects reduce-motion, status always shown as **icon + word + colour**, touch targets ≥ 44 px, written and announced errors, and an in-app **text size from 100 to 200 %** (Configuración → Tamaño del texto).
+**Accessible identity.** The Oliva brand (`design/logo/oliva/kit/GUIDE.md`): an olive palette in **light and dark** appearances, both checked for WCAG contrast in `__tests__/theme.test.ts`, [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next) for UI, and an animated logo (La O, an olive leaf inside the O) that respects reduce-motion. Status is always shown as **icon + word + colour**, touch targets are ≥ 44 px, errors are written out in Spanish next to what failed and announced, and there's an in-app **text size from 100 to 200 %** (Configuración → Tamaño del texto). iOS and Android use the system tab bar (Liquid Glass on iOS 26); web keeps a floating glass bar.
 
 **Six care features:**
 
@@ -112,13 +112,14 @@ app/                    expo-router routes
     plan.tsx            plan de cuidados (nurse edits, family reads)
     settings/           configuración
 src/
-  theme.ts              Tend tokens (colour, type, radius)
+  theme.ts              Oliva tokens (light + dark colour, type, radius, glass)
   components/           T (scaled text), Button, Card, Controls, Status, Sheet, Toast, Screen,
-                        Icon, Logo, Avatar, TabBarIcon, TimelineItem, TrendCard, ReasonChip, ReminderPicker
+                        Icon, Logo, Avatar, TabBarIcon, TimelineItem, TrendCard, ReasonChip, ReminderPicker,
+                        Glass, PressScale
   features/care/        live hooks + pure logic: clock, vitals, shifts, doses, timeline, estado, nextUp
   features/auth/        AuthProvider, useAuth, useMembership, guard, invite, appleAuth
   features/settings/    text size
-  lib/                  supabase client, env, mutate/invalidate, device prefs
+  lib/                  supabase client, env, mutate/invalidate, Spanish error texts, device prefs
 supabase/
   migrations/           0001_schema, 0002_rls, 0003_care_features, 0004_vital_readings_unique, 0005_rls_perf
   functions/            delete-account Edge Function

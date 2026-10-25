@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
 import Relevo from '../app/(app)/nurse/(tabs)/relevo';
 import type { DoseRow, EventRow, HandoffRow, ReadingRow, ScheduleRow } from '@/features/care/types';
@@ -124,13 +123,13 @@ test('handing off saves the handoff and can be undone', async () => {
   await waitFor(() => expect(mockDeleteEq).toHaveBeenCalledWith('id', 'h-new'));
 });
 
-test('a failed save is written out', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+test('a failed save is written out in the sheet, which stays open', async () => {
   mockInsertResult = { error: { message: 'sin conexión' } };
   renderRelevo();
   fireEvent.press(screen.getByText('Entregar turno a Rosa'));
   fireEvent.press(screen.getByText('Sí, entregar turno'));
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo guardar', 'sin conexión'));
+  expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy();
+  expect(screen.getByText('Sí, entregar turno')).toBeTruthy();
   expect(screen.queryByText('Turno entregado a Rosa.')).toBeNull();
 });
 

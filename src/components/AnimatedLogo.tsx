@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/theme';
 import { DISC, LEAF, Wordmark } from './Logo';
@@ -13,8 +13,10 @@ const SIZE = 136; // viewBox 0 0 256 256
 const settleEase = Easing.bezier(0.2, 0.8, 0.2, 1);
 const inOut = Easing.bezier(0.42, 0, 0.58, 1);
 
+// Only transform and opacity animate, so the native driver can run it on the UI
+// thread while the app loads behind it. Web has no native driver.
 const timing = (v: Animated.Value, toValue: number, duration: number, easing: (t: number) => number, delay = 0) =>
-  Animated.timing(v, { toValue, duration, easing, delay, useNativeDriver: false });
+  Animated.timing(v, { toValue, duration, easing, delay, useNativeDriver: Platform.OS !== 'web' });
 
 export function AnimatedLogo() {
   const grow = useRef(new Animated.Value(0)).current;
@@ -86,7 +88,7 @@ export function AnimatedLogo() {
           ]}
         >
           <Svg width={SIZE} height={SIZE} viewBox="0 0 256 256">
-            <Path d={LEAF} fill={colors.logoAccent} />
+            <Path d={LEAF} fill={colors.logoLeaf} />
           </Svg>
         </Animated.View>
       </Pressable>

@@ -124,8 +124,8 @@ export function TrendCard(p: TrendCardProps) {
                 <Path d={g.seps} fill="none" stroke={colors.line} strokeWidth={1.5} strokeDasharray="3 4" />
                 {g.prevPath ? <Path d={g.prevPath} fill="none" stroke={colors.field} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /> : null}
                 {g.curPath ? <Path d={g.curPath} fill="none" stroke={colors.pri} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" /> : null}
-                {g.warnDots ? <Path d={g.warnDots} fill={colors.warn} stroke={colors.white} strokeWidth={2} /> : null}
-                {g.alertDots ? <Path d={g.alertDots} fill={colors.danger} stroke={colors.white} strokeWidth={2} /> : null}
+                {g.warnDots ? <Path d={g.warnDots} fill={colors.warn} stroke={colors.surface} strokeWidth={2} /> : null}
+                {g.alertDots ? <Path d={g.alertDots} fill={colors.danger} stroke={colors.surface} strokeWidth={2} /> : null}
               </Svg>
             </View>
             <View style={s.weeks} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
