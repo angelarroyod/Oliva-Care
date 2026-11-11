@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/angelarroyod/vela/actions/workflows/ci.yml"><img src="https://github.com/angelarroyod/vela/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3A5A2C" alt="MIT license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-3A5A2C" alt="Proprietary license"></a>
   <img src="https://img.shields.io/badge/Expo-SDK%2056-000020?logo=expo" alt="Expo SDK 56">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white" alt="Supabase">
@@ -269,4 +269,4 @@ docs/superpowers/       earlier specs and plans (written under the Vela name)
 
 ## License
 
-[MIT](LICENSE) © 2026 Angel Arroyo
+Proprietary. © 2026 Angel Arroyo. All rights reserved. See [LICENSE](LICENSE).
