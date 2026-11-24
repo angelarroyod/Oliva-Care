@@ -7,6 +7,9 @@ import { Button } from '@/components/Button';
 import { Icon, type IconName } from '@/components/Icon';
 import { T } from '@/components/T';
 import { colors } from '@/theme';
+import { useAuth } from '@/features/auth/useAuth';
+import { env } from '@/lib/env';
+import { DEMO_USERS } from '@/lib/demo';
 
 function Bullet({ icon, children }: { icon: IconName; children: string }) {
   return (
@@ -15,6 +18,20 @@ function Bullet({ icon, children }: { icon: IconName; children: string }) {
         <Icon name={icon} size={20} color={colors.pri} />
       </View>
       <T size={17} style={s.bulletText}>{children}</T>
+    </View>
+  );
+}
+
+// Offline demo: sign straight in as a sample user. The layout redirects to the
+// role's home once the session lands.
+function DemoActions() {
+  const { signIn } = useAuth();
+  const tryAs = (u: keyof typeof DEMO_USERS) => signIn(DEMO_USERS[u].email, 'demo');
+  return (
+    <View style={s.actions}>
+      <T size={15} color={colors.ink2}>Demo con datos de ejemplo. Nada sale de este navegador.</T>
+      <Button label="Probar como enfermera" onPress={() => tryAs('nurse')} />
+      <Button label="Probar como familiar" variant="secondary" onPress={() => tryAs('family')} />
     </View>
   );
 }
@@ -37,10 +54,14 @@ export default function Welcome() {
             <Bullet icon="pulse">La enfermera anota cómo va el turno.</Bullet>
             <Bullet icon="heart">La familia ve cómo está, en cualquier momento.</Bullet>
           </View>
-          <View style={s.actions}>
-            <Button label="Crear cuenta" onPress={() => router.push('/(auth)/signup')} />
-            <Button label="Ya tengo cuenta" variant="secondary" onPress={() => router.push('/(auth)/login')} />
-          </View>
+          {env.demo ? (
+            <DemoActions />
+          ) : (
+            <View style={s.actions}>
+              <Button label="Crear cuenta" onPress={() => router.push('/(auth)/signup')} />
+              <Button label="Ya tengo cuenta" variant="secondary" onPress={() => router.push('/(auth)/login')} />
+            </View>
+          )}
         </View>
       </ScrollView>
     </Screen>

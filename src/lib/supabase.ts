@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 import { env } from './env';
+import { demoFetch, SilentSocket } from './demo';
 
 type KV = {
   getItem: (k: string) => string | null;
@@ -38,4 +39,5 @@ export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+  ...(env.demo ? { global: { fetch: demoFetch }, realtime: { transport: SilentSocket as never } } : {}),
 });
