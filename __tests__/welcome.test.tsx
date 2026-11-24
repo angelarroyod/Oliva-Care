@@ -5,7 +5,7 @@ import Welcome from '../app/(auth)/welcome';
 
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
 
-const LOGO = 'Logotipo de Tend: dos manos que sostienen una cruz. Toca para repetir la animación.';
+const LOGO = 'Logotipo de Oliva: una O con una hoja de olivo en el centro. Toca para repetir la animación.';
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -19,7 +19,7 @@ afterEach(() => {
 test('shows the wordmark header, tagline and bullets', async () => {
   render(<Welcome />);
   await act(async () => {});
-  expect(screen.getByRole('header', { name: 'Tend' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Oliva' })).toBeTruthy();
   expect(screen.getByText('Cuidado profesional en casa, con la familia al tanto.')).toBeTruthy();
   expect(screen.getByText('Cuida a tu familiar en equipo, en un solo lugar.')).toBeTruthy();
   expect(screen.getByText('La enfermera anota cómo va el turno.')).toBeTruthy();
@@ -44,7 +44,7 @@ test('the logo animation plays, finishes under 5 s and replays on tap', async ()
   await act(async () => {});
   const played = timing.mock.calls.length;
   expect(played).toBeGreaterThan(0);
-  // Longest track: the last letter, 1.6 s + 3 × .08 s stagger + .7 s ≈ 2.54 s.
+  // Longest track: the wordmark rise, 1.4 s + .7 s = 2.1 s.
   const end = Math.max(...timing.mock.calls.map(([, c]) => (c.delay ?? 0) + (c.duration ?? 0)));
   expect(end).toBeGreaterThan(2000);
   expect(end).toBeLessThanOrEqual(5000);

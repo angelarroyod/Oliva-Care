@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
 import { T, H2 } from '@/components/T';
@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
+import { ErrorText } from '@/components/Controls';
 import { useToast } from '@/components/Toast';
 import { ReminderPicker } from '@/components/ReminderPicker';
 import { useCare, useSchedules } from '@/features/care/hooks';
@@ -26,6 +27,7 @@ export default function NurseAviso() {
   const [draft, setDraft] = useState<{ mode: ReminderMode; minutes: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const back = () => router.back();
   if (!sc) {
@@ -52,7 +54,7 @@ export default function NurseAviso() {
       'medication_schedules',
     );
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setErr(err);
     router.back();
     const at = rows.map((r) => r.time);
     toast.show(
@@ -77,7 +79,7 @@ export default function NurseAviso() {
       'medication_schedules',
     );
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setErr(err); // shown in the sheet, which stays open
     setStopping(false);
     router.back();
     toast.show(saved(`${sc.name}: ya no se dará.`));
@@ -135,14 +137,16 @@ export default function NurseAviso() {
         </View>
       </Card>
 
+      {err && !stopping ? <ErrorText>{err}</ErrorText> : null}
       <Button label="Guardar aviso" onPress={save} disabled={busy} />
-      <Button label="Dejar de dar este medicamento" variant="dangerOutline" onPress={() => setStopping(true)} disabled={busy} />
+      <Button label="Dejar de dar este medicamento" variant="dangerOutline" onPress={() => { setErr(null); setStopping(true); }} disabled={busy} />
 
-      <Sheet visible={stopping} title={`¿Dejar de dar ${sc.name}?`} onClose={() => setStopping(false)}>
+      <Sheet visible={stopping} title={`¿Dejar de dar ${sc.name}?`} onClose={() => { setErr(null); setStopping(false); }}>
         <View style={{ gap: 8 }}>
           <Bullet>Las tomas que quedan hoy dejarán de aparecer.</Bullet>
           <Bullet>Lo ya anotado se queda en el historial.</Bullet>
         </View>
+        {err ? <ErrorText>{err}</ErrorText> : null}
         <Button label="Sí, dejar de darlo" variant="danger" onPress={stop} disabled={busy} />
       </Sheet>
     </Screen>
@@ -170,12 +174,12 @@ function Bullet({ children }: { children: string }) {
 const s = StyleSheet.create({
   rows: { gap: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pill: { minWidth: 64, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, backgroundColor: colors.priSoft },
+  pill: { minWidth: 64, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, borderCurve: 'continuous', backgroundColor: colors.priSoft },
   num: { fontVariant: ['tabular-nums'] },
   item: { flexDirection: 'row', gap: 6 },
   marker: { width: 18 },
   cross: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, paddingHorizontal: 14,
-    borderRadius: radius.input, borderWidth: 2, borderColor: colors.warn, backgroundColor: colors.warnSoft,
+    borderRadius: radius.input, borderCurve: 'continuous', borderWidth: 2, borderColor: colors.warn, backgroundColor: colors.warnSoft,
   },
 });

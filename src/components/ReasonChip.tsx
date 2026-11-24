@@ -32,7 +32,7 @@ export function ReasonChip({
       ]}
     >
       <View style={[s.ring, { borderColor: ring, backgroundColor: selected ? colors.pri : colors.surface }]}>
-        {selected ? <Icon name="check" size={14} color={colors.white} strokeWidth={3.2} /> : null}
+        {selected ? <Icon name="check" size={14} color={colors.onPri} strokeWidth={3.2} /> : null}
       </View>
       <T size={16} bold lh={1.25} color={disabled ? colors.ink2 : colors.ink} style={s.label}>
         {label}

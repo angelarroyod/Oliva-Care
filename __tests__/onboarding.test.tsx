@@ -24,7 +24,7 @@ const next = (label: string) => fireEvent.press(screen.getByRole('button', { nam
 test('role step: radio cards, written error, single Continuar', () => {
   render(<Onboarding />);
   expect(screen.getByText('Paso 2 de 3')).toBeTruthy();
-  expect(screen.getByRole('header', { name: '¿Cómo vas a usar Tend?' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: '¿Cómo vas a usar Oliva?' })).toBeTruthy();
   const radios = screen.getAllByRole('radio');
   expect(radios).toHaveLength(2);
   next('Continuar');

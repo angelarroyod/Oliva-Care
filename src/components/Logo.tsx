@@ -1,36 +1,63 @@
 import { View, StyleSheet } from 'react-native';
-import Svg, { G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '@/theme';
-import { T } from './T';
 
-// Tend mark: two hands (nurse + family) holding a coral cross. viewBox 0 0 120 120, translated (0, −5).
-export const HANDS_PATH = 'M20 56C20 84 38 102 60 102C82 102 100 84 100 56';
+// Oliva mark "La O": an olive disc whose counter is a leaf. viewBox 0 0 256 256.
+// Masters, colours and usage rules: design/logo/oliva/kit (build_kit.py, GUIDE.md).
+export const DISC = 'M128 32A96 96 0 1 1 127.99 32Z';
+export const LEAF = 'M78 178A100 100 0 0 1 178 78A100 100 0 0 1 78 178Z';
+// Small cut (≤ 32 px): shorter, fatter leaf so the ring at its tips stays open.
+const LEAF_SMALL = 'M84 172A72 72 0 0 1 172 84A72 72 0 0 1 84 172Z';
 
-export function LogoMark({ size = 30, strokeWidth = 11 }: { size?: number; strokeWidth?: number }) {
+export function LogoMark({ size = 32 }: { size?: number }) {
+  const leaf = size <= 32 ? LEAF_SMALL : LEAF;
   return (
-    <Svg width={size} height={size} viewBox="0 0 120 120" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <G transform="translate(0 -5)">
-        <Path d={HANDS_PATH} fill="none" stroke={colors.logoInk} strokeWidth={strokeWidth} strokeLinecap="round" />
-        <Rect x={52} y={28} width={16} height={44} rx={5} fill={colors.logoAccent} />
-        <Rect x={38} y={42} width={44} height={16} rx={5} fill={colors.logoAccent} />
-      </G>
+    <Svg width={size} height={size} viewBox="0 0 256 256">
+      <Path d={DISC + leaf} fillRule="evenodd" fill={colors.logoInk} />
+      <Path d={leaf} fill={colors.logoLeaf} />
     </Svg>
   );
 }
 
-// Header brand: 36px welcome-tinted tile + "Tend" wordmark (Bricolage 800).
+// "oliva" wordmark, drawn (not a font): round monoline strokes on a 112-unit x-height.
+const WORD_W = 471;
+const WORD_H = 184;
+
+export function Wordmark({ height, color = colors.logoInk }: { height: number; color?: string }) {
+  const st = { fill: 'none', stroke: color, strokeWidth: 26, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+  return (
+    <Svg width={(height * WORD_W) / WORD_H} height={height} viewBox={`-8 24 ${WORD_W} ${WORD_H}`}>
+      <Circle cx={56} cy={144} r={43} {...st} />
+      <Path d="M146 45V187M194 101V187M236 101L278 187L320 101M442 101V187" {...st} />
+      <Circle cx={194} cy={55} r={16} fill={color} />
+      <Circle cx={399} cy={144} r={43} {...st} />
+    </Svg>
+  );
+}
+
+// Header brand: mark + wordmark, read as one header (`accessible` hides the SVGs).
 export function BrandHeader() {
   return (
-    <View style={s.brand} accessibilityRole="header" accessibilityLabel="Tend">
-      <View style={s.tile}>
-        <LogoMark size={30} />
-      </View>
-      <T size={20} brand lh={1.1}>Tend</T>
+    <View style={s.brand} accessible accessibilityRole="header" accessibilityLabel="Oliva">
+      <LogoMark size={32} />
+      <Wordmark height={26} />
+    </View>
+  );
+}
+
+// The signature: the logo's leaf, grown and cropped off the corner of the olive
+// hero. Decorative. 18 % keeps heroSub text over it at 4.6:1; never on the fever hero.
+export function HeroLeaf() {
+  return (
+    <View style={s.heroLeaf} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={320} height={320} viewBox="0 0 256 256">
+        <Path d={LEAF} fill={colors.logoAccent} opacity={0.18} />
+      </Svg>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  tile: { width: 36, height: 36, borderRadius: 11, backgroundColor: colors.welcome, alignItems: 'center', justifyContent: 'center' },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroLeaf: { position: 'absolute', top: -110, right: -110 }, // the leaf fills the top-right ~110 px, tip cropped
 });

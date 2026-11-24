@@ -1,4 +1,3 @@
-import { Alert } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import PautaNueva from '../app/(app)/nurse/pauta-nueva';
 import { ToastProvider } from '@/components/Toast';
@@ -67,7 +66,6 @@ test('presets fill the hours and saving inserts a dated plan', async () => {
 
 test('continuous plan with free-typed hours; a failed insert stays on the form', async () => {
   mockInsert.mockImplementation(() => Promise.resolve({ error: { message: 'Sin conexión' } }));
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   show();
   fireEvent.changeText(screen.getByLabelText('Medicamento'), 'Omeprazol');
   fireEvent.changeText(screen.getByLabelText('Para qué es'), 'Estómago');
@@ -77,8 +75,7 @@ test('continuous plan with free-typed hours; a failed insert stays on the form',
   expect(mockInsert.mock.calls[0][0]).toEqual(
     expect.objectContaining({ purpose: 'Estómago', times: ['08:00', '09:30'], reminder_mode: 'before', reminder_minutes: 15, end_date: null }),
   );
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo guardar', 'Sin conexión'));
+  expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy();
   expect(mockBack).not.toHaveBeenCalled();
   expect(screen.getByLabelText('Medicamento').props.value).toBe('Omeprazol');
-  alert.mockRestore();
 });

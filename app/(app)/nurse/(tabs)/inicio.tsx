@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
+import { View, Pressable, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { BrandHeader } from '@/components/Logo';
+import { BrandHeader, HeroLeaf } from '@/components/Logo';
 import { Avatar, initialsOf } from '@/components/Avatar';
 import { T, H1, H2 } from '@/components/T';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { Card, RowLink } from '@/components/Card';
 import { useToast } from '@/components/Toast';
+import { Notice } from '@/components/Status';
 import {
   useCare, useSince, useSchedules, useDoseRows, useReadings, useEvents, useHandoffs, useConditions, useVitalPlans,
 } from '@/features/care/hooks';
@@ -21,6 +22,7 @@ import { dosesSpan, doctorRef, feverText, heroNext, myHandoff } from '@/features
 import { firstName, greeting, hhmm, lc, listY } from '@/features/care/clock';
 import { supabase } from '@/lib/supabase';
 import { mutate, saved } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, radius } from '@/theme';
 
 export default function NurseInicio() {
@@ -36,6 +38,7 @@ export default function NurseInicio() {
   const conditions = useConditions(pid);
   const plan = planFromRows(useVitalPlans(pid));
   const [busy, setBusy] = useState(false);
+  const [callErr, setCallErr] = useState<string | null>(null);
 
   const first = firstName(myName);
   const kind = meNurse ? shiftKind(meNurse) : null;
@@ -58,6 +61,7 @@ export default function NurseInicio() {
   async function callDoctor() {
     if (!fever || !pid || busy) return;
     setBusy(true);
+    setCallErr(null);
     const err = await mutate(
       supabase.from('care_events').insert({
         id: randomUUID(), // a resend after a lost response is a duplicate, not a second call
@@ -66,7 +70,7 @@ export default function NurseInicio() {
       'care_events',
     );
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setCallErr(failedTo('No se pudo anotar el aviso al médico.', err));
     // ponytail: no phone numbers are stored yet, so this only opens the dialer. Store the doctor's phone to dial it directly.
     Linking.openURL('tel:').catch(() => {});
     toast.show(saved(`Llamando ${doctorRef(doctor)}… Queda anotado que avisaste al médico.`));
@@ -111,7 +115,8 @@ export default function NurseInicio() {
         </T>
       </View>
 
-      <View style={[s.hero, { backgroundColor: hero.kind === 'fever' ? colors.danger : colors.pri }]}>
+      <View style={[s.hero, { backgroundColor: hero.kind === 'fever' ? colors.heroAlert : colors.hero }]}>
+        {hero.kind === 'fever' ? null : <HeroLeaf />}
         <T size={14} bold color={colors.heroSub} accessibilityRole="header" style={{ letterSpacing: 14 * 0.08 }}>
           {hero.eyebrow}
         </T>
@@ -119,6 +124,7 @@ export default function NurseInicio() {
         <T size={16} color={colors.heroSub}>{hero.sub}</T>
         <Button label={hero.cta} variant="onHero" height={52} size={17} iconRight="chevronRight" onPress={heroGo} disabled={busy} style={{ marginTop: 12 }} />
       </View>
+      {callErr ? <Notice tone="alert" alert>{callErr}</Notice> : null}
 
       {unrec ? (
         <Card tone="unrec" gap={12}>
@@ -175,7 +181,7 @@ export default function NurseInicio() {
 
 const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  hero: { borderRadius: radius.card, padding: 20, gap: 6 },
+  hero: { borderRadius: radius.card, padding: 20, gap: 6, overflow: 'hidden' },
   unrecRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   patientRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   patientTile: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },

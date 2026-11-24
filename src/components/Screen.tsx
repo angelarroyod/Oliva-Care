@@ -1,18 +1,27 @@
 import { View, ScrollView, StyleSheet, Platform } from 'react-native';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { colors } from '@/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BottomTabBarHeightContext } from 'expo-router/tabs';
+import { NavigationContext } from 'expo-router/react-navigation';
+import { SafeAreaView } from 'react-native-screens/experimental';
+import { colors, scheme } from '@/theme';
 import { ToastHost } from './Toast';
 import { OfflineBanner } from './Offline';
 import { H1, T } from './T';
 import { BackButton } from './Button';
+import { tabBarBottom } from './TabBarIcon';
 
 // Full-screen wrapper: system status bar, safe areas, scrollable content
 // (padding 8/20/28, vertical rhythm via gap), the offline banner and the toast host. Pass
 // scroll={false} for screens that lay out their own scroll (chat), and
 // bottomInset={false} inside a tab navigator (the tab bar covers the bottom
-// inset) or when the screen pads its own bottom edge.
+// inset) or when the screen pads its own bottom edge. On web, content scrolls
+// beneath the floating glass bar and fades out where it meets it. On iOS and
+// Android the system tab bar handles both: the scroll view gets its inset
+// automatically, and on iOS (where the bar overlays the screen) fixed layouts
+// and the toast sit in the screen's native safe area.
 export function Screen({
   children,
   bg = colors.bg,
@@ -32,24 +41,40 @@ export function Screen({
   const web = Platform.OS === 'web';
   const top = web ? 0 : insets.top;
   const bottom = web || !bottomInset ? 0 : insets.bottom; // keep the toast and last button off the home indicator
+  const tabH = useContext(BottomTabBarHeightContext); // undefined outside the tab navigator
+  const bar = tabH ? tabH + tabBarBottom(web ? 0 : insets.bottom) : 0; // screen height the floating JS bar (web only) covers
+  const nav = useContext(NavigationContext); // undefined outside a navigator (tests)
+  const sysBar = Platform.OS === 'ios' && nav?.getState()?.type === 'tab'; // iOS system tab bar over the screen
   return (
-    <View style={[s.root, { backgroundColor: bg, paddingTop: top, paddingBottom: bottom }]}>
-      <StatusBar style="dark" />
+    <View style={[s.root, { backgroundColor: bg, paddingTop: top, paddingBottom: scroll ? bottom : Math.max(bottom, bar) }]}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <OfflineBanner />
       {scroll ? (
         <ScrollView
           style={s.flex}
-          contentContainerStyle={[s.content, { gap }]}
+          contentContainerStyle={[s.content, { gap }, bar ? { paddingBottom: bar + 20 } : null]}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
+          contentInsetAdjustmentBehavior={sysBar ? 'automatic' : undefined}
         >
           {children}
         </ScrollView>
+      ) : sysBar ? (
+        <SafeAreaView edges={BOTTOM} style={s.flex}>{children}</SafeAreaView>
       ) : (
         <View style={s.flex}>{children}</View>
       )}
+      {scroll && bar ? (
+        <LinearGradient pointerEvents="none" colors={[`${bg}00`, `${bg}E6`]} style={[s.edge, { height: bar + 16 }]} />
+      ) : null}
       {footer}
-      <ToastHost />
+      {sysBar ? (
+        <SafeAreaView edges={BOTTOM} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+          <ToastHost />
+        </SafeAreaView>
+      ) : (
+        <ToastHost bottom={bar + 12} />
+      )}
     </View>
   );
 }
@@ -79,9 +104,12 @@ export function PageHeader({
   );
 }
 
+const BOTTOM = { bottom: true };
+
 const s = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   content: { paddingTop: 8, paddingHorizontal: 20, paddingBottom: 28, flexGrow: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  edge: { position: 'absolute', left: 0, right: 0, bottom: 0 }, // scroll edge effect under the tab bar
 });

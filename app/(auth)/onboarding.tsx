@@ -7,6 +7,7 @@ import { ErrorText, Field } from '@/components/Controls';
 import { Notice } from '@/components/Status';
 import { H1, T, type TProps } from '@/components/T';
 import { supabase } from '@/lib/supabase';
+import { errorText } from '@/lib/errors';
 import { normalizeInviteCode } from '@/features/auth/invite';
 import { useAuth } from '@/features/auth/useAuth';
 import { useTextScale } from '@/features/settings/textScale';
@@ -19,7 +20,7 @@ const ROLES: [Role, string, string][] = [
   ['nurse', 'Soy enfermera o enfermero', 'Anoto los signos, la medicación y cómo va el turno.'],
   ['family', 'Soy familiar', 'Quiero saber cómo está mi ser querido.'],
 ];
-const ROLE_Q = '¿Cómo vas a usar Tend?';
+const ROLE_Q = '¿Cómo vas a usar Oliva?';
 
 // Back button + "Paso n de 3" + the 3-segment bar (decorative; the words say it).
 function Steps({ n, onBack }: { n: number; onBack: () => void }) {
@@ -83,7 +84,7 @@ export default function Onboarding() {
       first.current = false;
       return;
     }
-    if (h1.current) AccessibilityInfo.sendAccessibilityEvent(h1.current, 'focus');
+    if (h1.current) AccessibilityInfo.sendAccessibilityEvent?.(h1.current, 'focus'); // missing on react-native-web
   }, [step]);
 
   const go = (next: Step) => {
@@ -115,7 +116,7 @@ export default function Onboarding() {
       p_room: room.trim() || null,
     });
     setBusy(false);
-    if (error) setServerErr(error.message);
+    if (error) setServerErr(errorText(error, 'No se pudo guardar el paciente. Vuelve a intentarlo.'));
     else router.replace('/(app)/nurse/inicio');
   };
 
@@ -222,6 +223,7 @@ const s = StyleSheet.create({
   ring: { width: 28, height: 28, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 14, height: 14, borderRadius: radius.pill },
   foot: { marginTop: 'auto' },
-  age: { flex: 0, width: 140 },
+  // Field's input is flex: 1 (basis 0); flex: 0 alone left it 0 wide on web, so set the basis.
+  age: { flexGrow: 0, flexShrink: 0, flexBasis: 140 },
   code: { minHeight: 64, fontFamily: font.bold, textAlign: 'center' },
 });

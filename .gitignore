@@ -53,3 +53,7 @@ skills-lock.json
 
 # local MCP config (contains your own Supabase project_ref)
 .mcp.json
+
+# generated locally: brainstorm server state (holds a token), /brag videos
+.superpowers/
+brag-output*/

@@ -108,7 +108,7 @@ const s = StyleSheet.create({
   mt2: { marginTop: 2 },
   mb4: { marginBottom: 4 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  tile: { width: 60, height: 60, borderRadius: 20, backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },
+  tile: { width: 60, height: 60, borderRadius: 20, borderCurve: 'continuous', backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },
   list: { gap: 6 },
   bullet: { flexDirection: 'row', gap: 8, paddingLeft: 4 },
   contact: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },

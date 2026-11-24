@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, use, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { colors } from '@/theme';
@@ -42,7 +42,7 @@ export function OfflineSync({ role, children }: { role: Role; children: ReactNod
 
 // Dark strip at the top of every signed-in screen while there's no connection.
 export function OfflineBanner() {
-  const role = useContext(RoleContext);
+  const role = use(RoleContext);
   const { online, pending } = useSyncExternalStore(subscribeOutbox, outboxSnapshot);
   if (!role || online) return null;
   const text =

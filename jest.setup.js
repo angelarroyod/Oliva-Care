@@ -9,6 +9,10 @@ jest.mock('expo-font', () => ({
 // NetInfo's native module doesn't exist under Jest; its package ships this mock.
 jest.mock('@react-native-community/netinfo', () => require('@react-native-community/netinfo/jest/netinfo-mock.js'));
 
+// Worklets has no native part under Jest; both packages ship their test setup.
+jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
+require('react-native-reanimated').setUpTests();
+
 // Provide safe-area insets without needing a provider in unit tests.
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context');

@@ -8,6 +8,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Avatar } from '@/components/Avatar';
+import { HeroLeaf } from '@/components/Logo';
 import { Notice, type Tone } from '@/components/Status';
 import { TrendCard } from '@/components/TrendCard';
 import {
@@ -37,7 +38,7 @@ const VITAL: Record<Severity, { word: string; ink: string; icon: IconName; borde
   alert: { word: 'Alerta', ink: colors.danger, icon: 'alert', border: { borderWidth: 2, borderColor: colors.danger } },
 };
 const DAY: Record<DayState, { bg: string; ink: string; border: object; icon?: IconName }> = {
-  ok: { bg: colors.ok, ink: colors.white, border: { borderWidth: 2, borderColor: colors.ok }, icon: 'check' },
+  ok: { bg: colors.ok, ink: colors.onPri, border: { borderWidth: 2, borderColor: colors.ok }, icon: 'check' },
   skipped: { bg: colors.warnSoft, ink: colors.warnInk, border: { borderWidth: 2, borderColor: colors.warn }, icon: 'ban' },
   unrec: { bg: colors.surface, ink: colors.ink2, border: { borderWidth: 2, borderColor: colors.field, borderStyle: 'dashed' }, icon: 'clock' },
   pending: { bg: colors.surface, ink: colors.pri, border: { borderWidth: 2, borderColor: colors.pri, borderStyle: 'dashed' }, icon: 'clock' },
@@ -112,6 +113,7 @@ export default function Estado() {
       <Screen bottomInset={false} gap={18}>
         {header}
         <View style={s.hero} accessibilityLiveRegion="polite">
+          <HeroLeaf />
           <T size={22} bold color={colors.white}>Cargando…</T>
           <T size={16} color={colors.heroSub}>{`Buscando lo último sobre ${short}.`}</T>
         </View>
@@ -124,6 +126,7 @@ export default function Estado() {
       {header}
 
       <View style={s.hero}>
+        {d.fever ? null : <HeroLeaf />}
         <View style={s.row8}>
           <Icon name={d.fever ? 'warn' : 'check'} size={18} color={colors.heroSub} strokeWidth={d.fever ? 2.4 : 2.8} />
           <T size={15} bold color={colors.heroSub} style={s.shrink}>{d.hero.status}</T>
@@ -308,7 +311,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   h1: { marginTop: 2 },
   h3: { marginTop: 6 },
-  hero: { backgroundColor: colors.pri, borderRadius: radius.card, padding: 20, gap: 10 },
+  hero: { backgroundColor: colors.hero, borderRadius: radius.card, padding: 20, gap: 10, overflow: 'hidden' },
   row5: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   row6: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   row8: { flexDirection: 'row', alignItems: 'center', gap: 8 },

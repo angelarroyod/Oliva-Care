@@ -1,46 +1,111 @@
-# Tend — home nursing care app (mobile)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/logo/oliva/kit/export/png/oliva-horizontal-reversed.png">
+    <img src="design/logo/oliva/kit/export/png/oliva-horizontal-color.png" alt="Oliva" width="320">
+  </picture>
+</p>
 
-> Formerly **Vela**. This repo is the **React Native / Expo mobile** app. The web companion, **[vela-web](https://github.com/angelarroyod/vela-web)** (React + Vite, `docker compose up`), shares the same Supabase backend but still runs the previous Vela design and schema — see [Web app status](#web-app-status).
+<p align="center">
+  <strong>Home-nursing care, shared between the nurse and the family.</strong><br>
+  A Spanish-language mobile app for iOS, Android and web.
+</p>
 
-Spanish-language home-nursing app with two roles in one app:
+<p align="center">
+  <a href="https://github.com/angelarroyod/vela/actions/workflows/ci.yml"><img src="https://github.com/angelarroyod/vela/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-3A5A2C" alt="Proprietary license"></a>
+  <img src="https://img.shields.io/badge/Expo-SDK%2056-000020?logo=expo" alt="Expo SDK 56">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white" alt="Supabase">
+</p>
 
-- **Nurse (enfermera):** records vital signs and medication, writes the shift handoff, keeps the care plan.
-- **Family (familiar):** follows the patient's day and week, the history and the messages.
+---
 
-Built with **Expo (React Native + TypeScript)**, **expo-router** and **Supabase** (Postgres + RLS + realtime). The same code runs on iOS, Android and web.
+## Overview
 
-## What's in the Tend redesign
+**Oliva** is one app with two roles:
 
-**Accessible identity.** New palette and type ([Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next) for UI, Bricolage Grotesque for the "Tend" wordmark), an animated logo (two hands holding a coral cross) that respects reduce-motion, status always shown as **icon + word + colour**, touch targets ≥ 44 px, written and announced errors, and an in-app **text size from 100 to 200 %** (Configuración → Tamaño del texto).
+- **Nurse (enfermera)** records vital signs and medication, writes the shift handoff and keeps the care plan.
+- **Family (familiar)** follows the patient's day and week, the history and the messages. Read-only, enforced by the database.
 
-**Six care features:**
+It is built with **Expo (React Native + TypeScript)**, **expo-router** and **Supabase** (Postgres, Row Level Security, realtime). The same code runs on iOS, Android and web, works offline, and the whole interface is in Spanish.
 
-| # | Feature | Where |
-|---|---------|-------|
-| 1 | **Weekly family dashboard** — today at the top (doses, vitals, "lo que debes saber", latest vitals), the week below (dose strip, exceptions, 4-week trend charts) | Familia → Estado |
-| 2 | **Dynamic vitals form** — fields come from the patient's care plan; every value is checked against the patient's own ranges (normal / revisar / alerta, glucose by moment, pain 0–10) | Enfermera → Signos |
-| 3 | **Daily history** — 7-day strip with a status dot per day, filters, one timeline of doses, controls, notes and handoffs | Historial (both roles) |
-| 4 | **Skip a dose with a reason** — "No se dio" requires a reason (and a note for "Otro motivo"), visible to everyone | Medicación |
-| 5 | **Configurable medication reminder** — at the exact time or N minutes before; routed to whoever is on shift when it fires, with a shift-boundary warning | Medicación → Avisos |
-| 6 | **Condition-based suggestions** — adding a condition suggests which vitals to measure, how often and in which range | Plan de cuidados |
+> **Naming.** The project was called **Vela**, then **Tend**, and is now **Oliva**. The old names remain in the repo name, the docs, the Expo slug/scheme and the `com.tend.app` bundle IDs.
+>
+> **Web companion.** [vela-web](https://github.com/angelarroyod/vela-web) (React + Vite) shares the same Supabase project but still uses the earlier Vela schema. See [Compatibility with vela-web](#compatibility-with-vela-web).
 
-Also: "Lo siguiente" priority hero for the nurse (fever → due dose → control → handoff), fever path across nurse and family screens, structured shift handoff with undo, medication schedules ("Añadir medicamento"), per-nurse shift windows, quick replies in Mensajes, and 7-second toasts with **Deshacer**.
+> [!IMPORTANT]
+> The default vital-sign ranges and condition suggestions are typical placeholder values. **A clinician must review them before any release.**
 
-> The default ranges and condition suggestions are typical values. **A clinician must review them before release.**
+## Contents
 
-## Screens
+- [Features](#features)
+- [Accessibility and design](#accessibility-and-design)
+- [Getting started](#getting-started)
+- [Architecture](#architecture)
+- [Data model](#data-model)
+- [Testing](#testing)
+- [Project layout](#project-layout)
+- [Roadmap](#roadmap)
+- [Documentation](#documentation)
+- [License](#license)
 
-| Nurse | Family | Access & settings |
-|-------|--------|-------------------|
+## Features
+
+| Feature | What it does | Where |
+|---------|--------------|-------|
+| **Weekly family dashboard** | Today at the top (doses, vitals, *lo que debes saber*), the week below (dose strip, exceptions, 4-week trend charts) | Familia → Estado |
+| **Dynamic vitals form** | Fields come from the patient's care plan; each value is checked against the patient's own ranges (normal / revisar / alerta, glucose by moment, pain 0–10) | Enfermera → Signos |
+| **Daily history** | 7-day strip with a status dot per day, filters, and one timeline of doses, controls, notes and handoffs | Historial (both roles) |
+| **Skip a dose with a reason** | *No se dio* requires a reason (and a note for *Otro motivo*), visible to everyone | Medicación |
+| **Configurable reminders** | At the exact time or N minutes before, routed to whoever is on shift, with a shift-boundary warning | Medicación → Avisos |
+| **Condition-based suggestions** | Adding a condition suggests which vitals to measure, how often and in which range | Plan de cuidados |
+
+Also included:
+
+- **"Lo siguiente"**, a priority hero for the nurse: fever → due dose → control → handoff.
+- A **fever path** shared across the nurse and family screens.
+- Structured **shift handoff**, medication schedules, per-nurse shift windows and quick replies in Mensajes.
+- **Offline-first writes** with a pending banner and automatic resend on reconnect.
+- 7-second toasts with **Deshacer** (undo), including while offline.
+- Email/password and **Sign in with Apple**, family invite codes and in-app account deletion.
+
+<details>
+<summary><strong>All screens</strong></summary>
+
+| Nurse | Family | Access and settings |
+|-------|--------|---------------------|
 | Inicio (Lo siguiente, paciente, en este turno) | Estado (hoy + esta semana) | Bienvenida (animated logo) |
 | Signos (dynamic form) | Historial | Entrar · Crear cuenta |
 | Historial | Mensajes | Elegir rol · Paciente · Código |
 | Relevo de turno | Perfil del paciente | Configuración (tamaño del texto) |
 | Perfil (turno, código de invitación) | Plan de cuidados (read-only) | Privacidad y aviso médico |
-| Medicación → Aviso · Añadir medicamento (pushed) | | |
+| Medicación → Aviso · Añadir medicamento | | |
 | Plan de cuidados (editable) | | |
 
-## Run it
+</details>
+
+## Accessibility and design
+
+The Oliva identity is documented in the [brand guide](design/logo/oliva/kit/GUIDE.md).
+
+- **Light and dark** olive palettes, both checked for WCAG contrast in [`__tests__/theme.test.ts`](__tests__/theme.test.ts).
+- [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next) for all UI text.
+- In-app **text size from 100 to 200 %** (Configuración → Tamaño del texto), applied to every string through one `<T>` component.
+- Status is always **icon + word + colour**, never colour alone.
+- Touch targets are **≥ 44 px**.
+- Errors are written out in Spanish next to what failed and announced to screen readers.
+- The animated logo respects **reduce motion**.
+- iOS and Android use the system tab bar (Liquid Glass on iOS 26); web uses a floating glass bar.
+
+## Getting started
+
+### Prerequisites
+
+- Node.js and npm
+- A [Supabase](https://supabase.com) project
+- [Expo Go](https://expo.dev/go) on a phone, or a browser for the web preview
+
+### 1. Install
 
 ```bash
 npm install
@@ -50,18 +115,100 @@ npm install
 cp .env.example .env
 ```
 
-Fill `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from your Supabase project, then:
+Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env`. Without them the UI still loads, but sign-in and data calls fail.
+
+### 2. Set up the database
+
+Run the files in [`supabase/migrations/`](supabase/migrations) **in order** in the Supabase SQL Editor:
+
+| File | Purpose |
+|------|---------|
+| `0001_schema.sql` | Base schema |
+| `0002_rls.sql` | Row Level Security policies |
+| `0003_care_features.sql` | Care-feature tables; idempotent and purely additive |
+| `0004_vital_readings_unique.sql` | One reading per vital per control |
+| `0005_rls_perf.sql` | Faster policies (same access) and foreign-key indexes |
+
+> [!NOTE]
+> - Before running `0003` on a project with existing data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`).
+> - Re-run `0005` after re-running `0002`, `0003` or vela-web's migrations.
+
+Account deletion uses the [`delete-account`](supabase/functions/delete-account) Edge Function; deploy it to your project for that feature to work.
+
+### 3. Run
 
 ```bash
 npm start
 ```
 
-- **Supabase:** run the SQL files in `supabase/migrations/` in order in the SQL Editor: `0001_schema.sql`, `0002_rls.sql`, `0003_care_features.sql`, `0004_vital_readings_unique.sql`, `0005_rls_perf.sql`. `0003` is idempotent and purely additive (see [Data model](#data-model)). Before running it on a project with old data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`). `0005` only rewrites policies for the performance advisor (same access) and adds foreign-key indexes; run it again after re-running `0002`, `0003` or vela-web's migrations.
-- **Phone (Expo Go):** scan the QR from `npm start`; phone and computer on the same Wi-Fi, or `npx expo start --tunnel`.
-- **Web preview:** `npm run web`.
-- Without `.env` the UI still loads; auth calls just fail.
+| Target | How |
+|--------|-----|
+| **Phone** | Scan the QR code with Expo Go (same Wi-Fi as the computer, or `npx expo start --tunnel`) |
+| **Web** | `npm run web`, then open http://localhost:8081 |
+| **iOS / Android** | `npm run ios` / `npm run android` |
 
-## Quality gates
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Expo dev server |
+| `npm run web` | Web preview on port 8081 |
+| `npm test` | Jest test suite |
+| `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
+
+## Architecture
+
+```
+Screen ──► mutate(builder, ...tables) ──► Supabase (PostgREST + RLS)
+              │ offline                        │ realtime
+              ▼                                ▼
+         outbox (SecureStore) ──flush()──► useLiveList ──► pure care logic ──► Screen
+```
+
+- **Routing** ([`app/`](app)). `expo-router` with a session gate in `(app)/_layout.tsx`. The redirect decision is the pure, tested `routeForState` in [`src/features/auth/guard.ts`](src/features/auth/guard.ts). Nurse and family each have their own tab group.
+- **Writes** ([`src/lib/db.ts`](src/lib/db.ts)). Every write goes through `mutate()`, which returns `null` or a Spanish error message and refreshes the affected live lists on the device.
+- **Offline outbox.** While offline, `mutate()` stores the unexecuted request in a queue persisted with SecureStore and replays it in order on reconnect. Replays are idempotent: inserts carry a client-generated id, doses upsert on `(schedule_id, scheduled_for)`, and a unique-violation counts as sent.
+- **Live data** ([`src/features/care/useLiveList.ts`](src/features/care/useLiveList.ts)). Realtime-subscribed lists per table and patient; queued offline writes are overlaid immediately, marked *Pendiente de enviar*.
+- **Care logic** ([`src/features/care/`](src/features/care)). Pure, unit-tested TypeScript modules: `doses`, `vitals`, `vitalsForm`, `shifts`, `timeline`, `estado`, `nextUp` and `clock`. Screens stay thin.
+
+### How it behaves
+
+- **Doses are expanded on the device** from the schedules; only recorded doses are stored. A dose is *pending* until 60 minutes after its time and *sin registrar* after that (re-reminder at +30 min). Any nurse can record it later (*anotada más tarde*).
+- **Reminders** go to whoever is on shift when they fire; a nurse without a fixed shift covers the gaps. Shifts can wrap overnight.
+- **Severity** is *warn* outside the patient's normal range and *alert* outside the alert band. Blood pressure takes the worse of systolic and diastolic; glucose uses the range for its moment. A temperature above 37.5 °C opens the fever path until a doctor call is logged or a normal temperature is recorded.
+
+## Data model
+
+`0003_care_features.sql` adds, on top of the base schema:
+
+| Table | Holds |
+|-------|-------|
+| `medication_schedules` | Medication, dose and purpose; `times time[]`; reminder (`exact` / `before` + minutes); start and end date; `suspended_at` (*Dejar de dar*) |
+| `medication_doses` | One row per **recorded** dose: `given` or `skipped` (+ reason, note), who, when, `recorded_late` |
+| `vital_readings` | One row per value; `control_id` groups one save; `severity` (ok / warn / alert) against the plan at save time |
+| `patient_conditions` | The patient's conditions (8 kinds) |
+| `vital_plans` | Per patient and vital: frequency, routine or not, normal range(s), alert band, source conditions |
+
+It also adds `care_memberships.shift_start` / `shift_end`, extends the `care_team()` RPC with shift windows, and adds `set_my_shift` so a nurse can change only their own window.
+
+### Security model
+
+- New tables are **readable by the patient's members** and **writable only by nurse members**. Family is read-only by RLS, not by hidden buttons.
+- `profiles` and `care_memberships` are readable only by their owner; team names come through the `care_team()` RPC.
+- Author columns use `ON DELETE SET NULL`, so account deletion is never blocked.
+- Every table is in the `supabase_realtime` publication.
+
+### Compatibility with vela-web
+
+vela-web still writes the legacy `vitals`, `medications` and `medication_plans` tables and the free-text `patients.conditions`. Migration `0003` keeps all of them and can run before or after vela-web's own migrations:
+
+- Old `vitals` rows are copied into `vital_readings`.
+- `medication_plans` become schedules with the same id, along with their administered doses; any other `medications` row becomes a one-day schedule.
+- Re-running `0003` picks up rows written by vela-web since the last run.
+
+Moving vela-web onto the new tables is planned separately.
+
+## Testing
 
 ```bash
 npm test
@@ -71,76 +218,55 @@ npm test
 npm run typecheck
 ```
 
-CI runs both on every push and pull request (43 suites, 268 tests). The care logic (doses, severity, shifts, timeline, family aggregates) is pure TypeScript with unit tests; screens have React Native Testing Library tests.
-
-## Data model
-
-`0003_care_features.sql` adds, on top of the M2 schema:
-
-| Table | Holds |
-|-------|-------|
-| `medication_schedules` | medication + dose + purpose, `times time[]`, reminder (`exact` / `before` + minutes), start / end date, `suspended_at` ("Dejar de dar") |
-| `medication_doses` | one row per **recorded** dose: `given` or `skipped` (+ reason, note), who, when, `recorded_late` |
-| `vital_readings` | one row per value; a `control_id` groups one save; `severity` (ok / warn / alert) against the patient's plan at save time |
-| `patient_conditions` | the patient's conditions (8 kinds) |
-| `vital_plans` | per patient and vital: frequency, in routine or not, normal range(s), alert band, which conditions it comes from |
-
-Plus `care_memberships.shift_start` / `shift_end` (who is on shift; overnight wraps), the `care_team()` RPC extended with those shift windows (names and roles of the team; `profiles` / `care_memberships` stay readable only by their owner), the `set_my_shift` RPC (a nurse changes only their own window), `ON DELETE SET NULL` on every author column so account deletion never gets blocked, and every table in the `supabase_realtime` publication. Every new table is readable by the patient's members and writable only by nurse members — **family is read-only by RLS**, not by hidden buttons.
-
-How it behaves:
-
-- **Doses are expanded on the device** from the schedules; only recorded doses are stored. A dose is *pending* until 60 minutes after its time and *sin registrar* after that (re-reminder shown at +30 min). Any nurse can record it later ("anotada más tarde").
-- **Who gets a reminder** is whoever is on shift when it fires; a nurse without a fixed shift covers the gaps.
-- **Severity:** *warn* outside the patient's normal range, *alert* outside the alert band; blood pressure takes the worse of systolic and diastolic; glucose uses the range for its moment. A temperature above 37.5 °C opens the fever path until a doctor call is logged or a normal temperature is recorded.
-- **Legacy data:** old `vitals` rows are copied into `vital_readings`; vela-web's `medication_plans` become schedules with the same id (their administered doses come along); any other `medications` row becomes a one-day schedule. The old tables are left untouched for vela-web, and re-running `0003` picks up rows written since.
-- **Offline:** writes made without a connection go to an outbox on the phone (`src/lib/db.ts`, through `mutate()`), a dark banner says so with the pending count, and the queue is sent in order when the connection returns ("Conexión recuperada. Se enviaron N registros."). Undo while offline takes the write back out. Lists show what was saved offline right away, marked "Pendiente de enviar" (`mergePending` in `useLiveList`), and otherwise keep the last data loaded in this session. Inserts carry a client id, so a resend after a lost response never doubles a row (`0004` adds one reading per vital per control as a database rule too).
-- **Shared project with vela-web:** `0003` is written to run before or after vela-web's own migrations (`0003_lazo` … `0006_medication_plans`) — it reuses their `patients.allergies text[]` and `care_team()`, and opens no table wider than vela-web expects.
-
-Not done yet (see [Roadmap](#roadmap)): push reminders and the server-side "sin registrar" job (need the EAS dev build).
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs both on every push and pull request. The care logic is covered by pure unit tests; screens are tested with React Native Testing Library, including accessibility checks in [`__tests__/a11y.test.tsx`](__tests__/a11y.test.tsx).
 
 ## Project layout
 
 ```
 app/                    expo-router routes
   index.tsx             session-based entry redirect
-  legal.tsx             privacy + medical notice (outside the session gate)
+  legal.tsx             privacy and medical notice (outside the session gate)
   (auth)/               welcome, login, signup, onboarding (role → patient | code)
   (app)/                session-gated
     nurse/(tabs)/       inicio, signos, historial, relevo, perfil
-    nurse/              medicacion, aviso/[id], pauta-nueva (pushed)
+    nurse/              medicacion, aviso/[id], pauta-nueva
     family/(tabs)/      inicio (Estado), historial, mensajes, perfil
-    plan.tsx            plan de cuidados (nurse edits, family reads)
+    plan.tsx            care plan (nurse edits, family reads)
     settings/           configuración
 src/
-  theme.ts              Tend tokens (colour, type, radius)
-  components/           T (scaled text), Button, Card, Controls, Status, Sheet, Toast, Screen,
-                        Icon, Logo, Avatar, TabBarIcon, TimelineItem, TrendCard, ReasonChip, ReminderPicker
-  features/care/        live hooks + pure logic: clock, vitals, shifts, doses, timeline, estado, nextUp
-  features/auth/        AuthProvider, useAuth, useMembership, guard, invite, appleAuth
+  theme.ts              Oliva tokens: light and dark colour, type, radius, glass
+  components/           T (scaled text), Button, Card, Status, Sheet, Toast, Logo, …
+  features/care/        live hooks and pure care logic
+  features/auth/        auth provider, membership, route guard, invites, Apple sign-in
   features/settings/    text size
-  lib/                  supabase client, env, mutate/invalidate, device prefs
+  lib/                  Supabase client, env, mutate/outbox, Spanish error texts, prefs
 supabase/
-  migrations/           0001_schema, 0002_rls, 0003_care_features, 0004_vital_readings_unique, 0005_rls_perf
+  migrations/           SQL migrations, applied in order
   functions/            delete-account Edge Function
-__tests__/              unit + screen tests
+design/logo/oliva/      brand kit, logo sources and exports
+__tests__/              unit and screen tests
 docs/superpowers/       earlier specs and plans (written under the Vela name)
 ```
 
-## Web app status
-
-vela-web has its own redesign (Lazo) and still writes the legacy `vitals` / `medications` / `medication_plans` tables and the free-text `patients.conditions`. Migration `0003` keeps all of them so the web app keeps working; data written there reaches Tend when `0003` is re-run. Moving the web app onto the new tables is a separate task.
-
-## Docs
-
-- Original design spec: [docs/superpowers/specs/2026-06-26-vela-design.md](docs/superpowers/specs/2026-06-26-vela-design.md)
-- Medication plans spec (superseded by the Tend schema): [docs/superpowers/specs/2026-10-01-vela-med-plans-design.md](docs/superpowers/specs/2026-10-01-vela-med-plans-design.md)
-- Milestone plans: [M1](docs/superpowers/plans/2026-06-26-vela-m1-foundation.md) · [M2](docs/superpowers/plans/2026-06-26-vela-m2-backend-auth.md) · [M3](docs/superpowers/plans/2026-07-03-vela-m3-live-data.md) · [M4](docs/superpowers/plans/2026-07-03-vela-m4-polish.md)
-
 ## Roadmap
 
-- **M1 — Foundation** ✅ screens, navigation, theme.
-- **M2 — Backend + auth** ✅ Supabase (Postgres + RLS), email/password + Sign in with Apple, onboarding, family invite/join, account deletion.
-- **M3 — Live data** ✅ screens on Supabase with realtime sync (family ⇄ nurse).
-- **M4 — Polish (lean)** ✅ write-error handling, accessibility labels, privacy + medical-disclaimer screen.
-- **M5 — Tend** ✅ rename, accessible redesign, the six care features, schedules, shifts, new schema, app icons.
-- **Next:** push reminders + server "sin registrar" job (EAS dev build, Apple enrollment) · port vela-web to Tend · release prep (EAS builds, TestFlight, store metadata).
+- [x] **M1 — Foundation:** screens, navigation, theme
+- [x] **M2 — Backend and auth:** Supabase with RLS, email/password and Sign in with Apple, onboarding, family invites, account deletion
+- [x] **M3 — Live data:** realtime sync between nurse and family
+- [x] **M4 — Polish:** write-error handling, accessibility labels, privacy and medical-disclaimer screen
+- [x] **M5 — Redesign:** accessible Oliva identity, the six care features, schedules, shifts, new schema, dark mode, offline outbox
+- [ ] Push reminders and a server-side *sin registrar* job (needs an EAS dev build)
+- [ ] Port vela-web to the new schema
+- [ ] Release prep: EAS builds, TestFlight, store metadata, clinician review of default ranges
+
+## Documentation
+
+- [Brand guide](design/logo/oliva/kit/GUIDE.md)
+- [Original design spec](docs/superpowers/specs/2026-06-26-vela-design.md)
+- [Medication plans spec](docs/superpowers/specs/2026-10-01-vela-med-plans-design.md) (superseded by the current schema)
+- Milestone plans: [M1](docs/superpowers/plans/2026-06-26-vela-m1-foundation.md) · [M2](docs/superpowers/plans/2026-06-26-vela-m2-backend-auth.md) · [M3](docs/superpowers/plans/2026-07-03-vela-m3-live-data.md) · [M4](docs/superpowers/plans/2026-07-03-vela-m4-polish.md)
+- [CLAUDE.md](CLAUDE.md): conventions for contributors and coding agents
+
+## License
+
+Proprietary. © 2026 Angel Arroyo. All rights reserved. See [LICENSE](LICENSE).

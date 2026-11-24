@@ -1,0 +1,53 @@
+{
+  "brand": "Oliva",
+  "tagline": "Cuidados en casa",
+  "brief": "A Spanish-language home-care app where a nurse records vitals, doses and handoffs and the family follows along. Named after Oliva, the founder's grandmother, whose care inspired it. It should feel warm, calm and trustworthy, never clinical.",
+  "adjectives": [
+    "warm",
+    "calm",
+    "trustworthy",
+    "human"
+  ],
+  "criteria": "Success: avoids the category's crosses, hearts and houses; carries Oliva's name and story; reads at 16 px; works in one colour.",
+  "mockups": [
+    "app-icon",
+    "website",
+    "badge",
+    "business-card",
+    "social",
+    "favicon-tab"
+  ],
+  "nav": [
+    "Cómo funciona",
+    "Para familias",
+    "Para enfermeras"
+  ],
+  "brand_color": "#3A5A2C",
+  "greyscale": false,
+  "final": true,
+  "designer": "Claude",
+  "concepts": [
+    {
+      "name": "La O",
+      "symbol": "oliva-symbol-color.svg",
+      "lockup": "oliva-horizontal-color.svg",
+      "stacked": "oliva-stacked-color.svg",
+      "symbol_on_tile": "oliva-symbol-color.svg",
+      "lockup_on_dark": "oliva-horizontal-reversed.svg",
+      "idea": "The O of Oliva holds an olive leaf at its heart: the person cared for, at the centre.",
+      "rationale": [
+        "Her initial and her tree in one shape: the name and the story in a single mark",
+        "Olive tree: centuries of life, peace, and growth that needs tending",
+        "No crosses, hearts or houses; warm olive instead of clinical blue",
+        "Disc plus leaf survives 16 px; a small cut widens the leaf for favicons"
+      ]
+    }
+  ],
+  "recommendation": "Final: La O with the rounded oliva wordmark, deep olive (#3A5A2C) with a leaf green (#A9BD7A) on warm cream (#F5F2E6).",
+  "next_steps": [
+    "Trademark search (OEPM / EUIPO, app stores, domains)",
+    "Rename copy in the app and stores",
+    "Optional: draw a custom display font from the wordmark"
+  ],
+  "tile_color": "#F5F2E6"
+}

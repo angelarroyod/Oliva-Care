@@ -57,7 +57,7 @@ const s = StyleSheet.create({
   },
   bullets: { gap: 14 },
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-  tile: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },
+  tile: { width: 36, height: 36, borderRadius: 12, borderCurve: 'continuous', backgroundColor: colors.priSoft, alignItems: 'center', justifyContent: 'center' },
   bulletText: { flex: 1, paddingTop: 6 },
   actions: { gap: 12 },
 });

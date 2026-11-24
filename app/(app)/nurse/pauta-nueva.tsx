@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Chip, Field } from '@/components/Controls';
+import { Chip, ErrorText, Field } from '@/components/Controls';
 import { useToast } from '@/components/Toast';
 import { ReminderPicker } from '@/components/ReminderPicker';
 import { useCare } from '@/features/care/hooks';
@@ -33,6 +33,7 @@ export default function PautaNueva() {
   const [rem, setRem] = useState<{ mode: ReminderMode; minutes: number }>({ mode: 'before', minutes: 15 });
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
 
   const times = parseTimes(hours);
   const n = /^\d+$/.test(days.trim()) ? Number(days.trim()) : null;
@@ -49,6 +50,7 @@ export default function PautaNueva() {
   const save = async () => {
     setTried(true);
     if (!valid || !times || !pid) return;
+    setSaveErr(null);
     const start = localDate(now);
     setBusy(true);
     const err = await mutate(
@@ -70,7 +72,7 @@ export default function PautaNueva() {
       'medication_schedules',
     );
     setBusy(false);
-    if (err) return Alert.alert('No se pudo guardar', err);
+    if (err) return setSaveErr(err);
     router.back();
     const next = times.find((t) => atTime(now, t).getTime() >= now.getTime());
     toast.show(saved(`${name.trim()} añadido.${next ? ` Próxima dosis hoy a las ${next}.` : ''}`));
@@ -119,6 +121,7 @@ export default function PautaNueva() {
         <ReminderPicker times={times ?? []} mode="before" minutes={15} onChange={setRem} />
       </Card>
 
+      {saveErr ? <ErrorText>{saveErr}</ErrorText> : null}
       <Button label="Guardar medicamento" onPress={save} disabled={busy || (tried && !valid)} />
     </Screen>
   );

@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   SAVED_OFFLINE, flush, lastQueued, mutate, onInvalidate, outboxSnapshot, saved, setOnline, unqueue,
 } from '@/lib/db';
+import { OFFLINE_ERROR } from '@/lib/errors';
 
 const mockPrefs = new Map<string, string>();
 jest.mock('@/lib/prefs', () => ({
@@ -30,8 +31,9 @@ test('returns null on success', async () => {
   expect(await mutate(Promise.resolve({ error: null }))).toBeNull();
 });
 
-test('returns the error message on failure', async () => {
-  expect(await mutate(Promise.resolve({ error: { message: 'boom' } }))).toBe('boom');
+test('on failure returns Spanish text, never the server message', async () => {
+  expect(await mutate(Promise.resolve({ error: { message: 'boom' } }))).toBe('No se pudo guardar. Vuelve a intentarlo.');
+  expect(await mutate(Promise.resolve({ error: { message: 'denied', code: '42501' } }))).toBe('No tienes permiso para hacer este cambio.');
 });
 
 test('a successful write refreshes the named tables; a failed one does not', async () => {
@@ -98,7 +100,7 @@ test('undo while offline takes the write back out of the outbox', async () => {
 
 test('offline, a request that already started (not a builder) just runs', async () => {
   setOnline(false);
-  expect(await mutate(Promise.resolve({ error: { message: 'Network request failed' } }))).toBe('Network request failed');
+  expect(await mutate(Promise.resolve({ error: { message: 'Network request failed' } }))).toBe(OFFLINE_ERROR);
   expect(outboxSnapshot().pending).toBe(0);
 });
 

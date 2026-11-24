@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { OFFLINE_ERROR } from '@/lib/errors';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import Medicacion from '../app/(app)/nurse/medicacion';
 import { ToastProvider } from '@/components/Toast';
@@ -128,6 +128,27 @@ test('Marcar como dada upserts the dose and Deshacer sets it back to pending', a
   expect(mockEq).toHaveBeenCalledWith('scheduled_for', iso(mockAt(15, 23, 30)));
 });
 
+test('Corregir: only on my own records; it resets the dose and Deshacer restores it exactly', async () => {
+  show();
+  // Omeprazol was recorded by me (Carmen); Rosa's Metformina gets no Corregir.
+  expect(screen.getAllByText('Corregir')).toHaveLength(1);
+  fireEvent.press(screen.getByLabelText('Corregir: Omeprazol de las 22:00'));
+  await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith({
+    status: 'pending', recorded_at: null, recorded_by: null, recorded_late: false, skip_reason: null, skip_note: null,
+  }));
+  expect(mockEq).toHaveBeenCalledWith('recorded_by', 'c');
+  expect(await screen.findByText('Omeprazol de las 22:00: registro anulado. Ya puedes anotarla de nuevo.')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Deshacer'));
+  await waitFor(() => expect(mockUpsert).toHaveBeenCalledWith(
+    {
+      schedule_id: 'ome', patient_id: 'p1', scheduled_for: iso(mockAt(15, 22)), status: 'skipped', recorded_at: iso(mockAt(15, 22, 10)),
+      recorded_by: 'c', recorded_late: false, skip_reason: 'asleep', skip_note: null,
+    },
+    { onConflict: 'schedule_id,scheduled_for' },
+  ));
+});
+
 test('Sí, se dio records an unrecorded dose as late', async () => {
   show();
   fireEvent.press(screen.getByText('Sí, se dio'));
@@ -171,12 +192,12 @@ test('omit sheet validates the reason and saves it', async () => {
 });
 
 test('a failed save keeps the sheet open and shows the error', async () => {
-  mockUpsert.mockImplementation(() => Promise.resolve({ error: { message: 'Sin conexión' } }));
+  mockUpsert.mockImplementation(() => Promise.resolve({ error: { message: 'Network request failed' } }));
   show();
   fireEvent.press(screen.getAllByText('No se dio')[0]);
   fireEvent.press(screen.getByText('Lo rechazó'));
   fireEvent.press(screen.getByText('Guardar: no se dio'));
-  expect(await screen.findByText('Sin conexión')).toBeTruthy();
+  expect(await screen.findByText(OFFLINE_ERROR)).toBeTruthy();
   expect(screen.getByText('Guardar: no se dio')).toBeTruthy();
 });
 
@@ -253,19 +274,18 @@ test('yesterday 23:30 goes Sin registrar after midnight and can still be recorde
   expect(await screen.findByText('Losartán de las 23:30 anotada como dada.')).toBeTruthy();
 });
 
-test('a failed give or undo is shown to the user', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  mockUpsert.mockImplementationOnce(() => Promise.resolve({ error: { message: 'Sin conexión' } }));
+test('a failed give or undo is shown to the user, in Spanish', async () => {
+  mockUpsert.mockImplementationOnce(() => Promise.resolve({ error: { message: 'Network request failed' } }));
   show();
   fireEvent.press(screen.getByLabelText('Marcar como dada: Losartán de las 23:30'));
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo guardar', 'Sin conexión'));
+  expect(await screen.findByText(OFFLINE_ERROR)).toBeTruthy(); // on the dose card
   expect(screen.queryByText('Deshacer')).toBeNull();
 
-  mockUndoError = { message: 'Sin conexión' };
+  mockUndoError = { message: 'internal error' };
   fireEvent.press(screen.getByLabelText('Marcar como dada: Losartán de las 23:30'));
+  expect(screen.queryByText(OFFLINE_ERROR)).toBeNull(); // a new try clears the old error
   fireEvent.press(await screen.findByText('Deshacer'));
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo deshacer', 'Sin conexión'));
-  alert.mockRestore();
+  expect(await screen.findByText('No se pudo deshacer. Vuelve a intentarlo.')).toBeTruthy();
 });
 
 test('the omit sheet refuses to overwrite a dose someone else recorded meanwhile', async () => {

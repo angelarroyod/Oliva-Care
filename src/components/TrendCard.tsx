@@ -124,8 +124,8 @@ export function TrendCard(p: TrendCardProps) {
                 <Path d={g.seps} fill="none" stroke={colors.line} strokeWidth={1.5} strokeDasharray="3 4" />
                 {g.prevPath ? <Path d={g.prevPath} fill="none" stroke={colors.field} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /> : null}
                 {g.curPath ? <Path d={g.curPath} fill="none" stroke={colors.pri} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" /> : null}
-                {g.warnDots ? <Path d={g.warnDots} fill={colors.warn} stroke={colors.white} strokeWidth={2} /> : null}
-                {g.alertDots ? <Path d={g.alertDots} fill={colors.danger} stroke={colors.white} strokeWidth={2} /> : null}
+                {g.warnDots ? <Path d={g.warnDots} fill={colors.warn} stroke={colors.surface} strokeWidth={2} /> : null}
+                {g.alertDots ? <Path d={g.alertDots} fill={colors.danger} stroke={colors.surface} strokeWidth={2} /> : null}
               </Svg>
             </View>
             <View style={s.weeks} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -163,13 +163,13 @@ const s = StyleSheet.create({
   shrink: { flexShrink: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 11, flexShrink: 0 },
-  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: 14 },
+  empty: { padding: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: 14, borderCurve: 'continuous' },
   chart: { width: '100%', aspectRatio: W / H },
   visible: { overflow: 'visible' },
   weeks: { flexDirection: 'row', marginTop: 6 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6, columnGap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  swatchBand: { width: 18, height: 10, borderRadius: 3, backgroundColor: colors.priSoft, borderWidth: 1, borderColor: colors.line },
+  swatchBand: { width: 18, height: 10, borderRadius: 3, borderCurve: 'continuous', backgroundColor: colors.priSoft, borderWidth: 1, borderColor: colors.line },
   swatchLine: { width: 18, height: 4, borderRadius: 2, backgroundColor: colors.pri },
   compare: { paddingTop: 10, borderTopWidth: 1.5, borderTopColor: colors.line },
 });

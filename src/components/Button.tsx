@@ -1,22 +1,23 @@
-import { Pressable, View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, radius } from '@/theme';
 import { T } from './T';
 import { Icon, type IconName } from './Icon';
+import { PressScale } from './PressScale';
 
 // Pill buttons. primary = filled pri; secondary = 2px pri outline; outline =
 // 2px field outline, ink text ("No se dio"); neutral = 2px line outline
 // ("Volver", "Cancelar"); danger / dangerOutline = destructive; onHero = white
-// on the pri/danger hero card.
+// on the olive or fever hero, which keeps its colours in both appearances.
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'neutral' | 'danger' | 'dangerOutline' | 'onHero';
 
 const V: Record<ButtonVariant, { bg: string; ink: string; border?: string }> = {
-  primary: { bg: colors.pri, ink: colors.white },
+  primary: { bg: colors.pri, ink: colors.onPri },
   secondary: { bg: colors.surface, ink: colors.pri, border: colors.pri },
   outline: { bg: colors.surface, ink: colors.ink, border: colors.field },
   neutral: { bg: colors.surface, ink: colors.ink, border: colors.line },
-  danger: { bg: colors.danger, ink: colors.white },
+  danger: { bg: colors.danger, ink: colors.onPri },
   dangerOutline: { bg: colors.surface, ink: colors.danger, border: colors.danger },
-  onHero: { bg: colors.surface, ink: colors.pri },
+  onHero: { bg: colors.white, ink: colors.hero },
 };
 
 export function Button({
@@ -45,17 +46,17 @@ export function Button({
   const v = V[variant];
   const labelSize = size ?? (height >= 56 ? 17 : 16);
   return (
-    <Pressable
+    <PressScale
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled }}
-      style={({ pressed }) => [
+      style={[
         s.btn,
         { minHeight: height, backgroundColor: v.bg },
         v.border ? { borderWidth: 2, borderColor: v.border } : null,
-        (pressed || disabled) && { opacity: disabled ? 0.5 : 0.85 },
+        disabled && { opacity: 0.5 },
         style,
       ]}
     >
@@ -66,16 +67,16 @@ export function Button({
         </T>
         {iconRight ? <Icon name={iconRight} size={18} color={v.ink} strokeWidth={2.4} /> : null}
       </View>
-    </Pressable>
+    </PressScale>
   );
 }
 
 // 48×48 chevron-left back button.
 export function BackButton({ onPress, label = 'Volver' }: { onPress: () => void; label?: string }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={s.back} hitSlop={4}>
+    <PressScale onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={s.back} hitSlop={4}>
       <Icon name="chevronLeft" size={20} color={colors.ink} strokeWidth={2.2} />
-    </Pressable>
+    </PressScale>
   );
 }
 

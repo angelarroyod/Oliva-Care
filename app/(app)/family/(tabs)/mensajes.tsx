@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert, StyleSheet, AccessibilityInfo } from 'react-native';
+import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, StyleSheet, AccessibilityInfo } from 'react-native';
 import { colors, font, radius } from '@/theme';
 import { Screen } from '@/components/Screen';
 import { T, H1 } from '@/components/T';
 import { Icon } from '@/components/Icon';
+import { ErrorText } from '@/components/Controls';
 import { Avatar, initialsOf } from '@/components/Avatar';
 import { useToast } from '@/components/Toast';
 import { useTextScale } from '@/features/settings/textScale';
@@ -13,6 +14,7 @@ import { firstName, hhmm } from '@/features/care/clock';
 import { onShift, shiftKind } from '@/features/care/shifts';
 import { supabase } from '@/lib/supabase';
 import { SAVED_OFFLINE, lastQueued, mutate } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 
 // Family · Mensajes: chat with the nurse on shift.
 export default function Mensajes() {
@@ -21,6 +23,7 @@ export default function Mensajes() {
   const { pct } = useTextScale();
   const toast = useToast();
   const [draft, setDraft] = useState('');
+  const [sendErr, setSendErr] = useState<string | null>(null);
   const list = useRef<ScrollView>(null);
 
   const on = onShift(nurses, hhmm(now));
@@ -44,12 +47,13 @@ export default function Mensajes() {
     const body = text.trim();
     if (!body || !pid) return;
     setDraft('');
+    setSendErr(null);
     // Client id: a resend after a lost response is a duplicate (23505), not a second
     // message, and the queued bubble is replaced by the real row, not doubled.
     const err = await mutate(supabase.from('messages').insert({ id: randomUUID(), patient_id: pid, sender_id: meId, body }), 'messages');
     if (err) {
-      setDraft(body);
-      Alert.alert('No se pudo enviar', err);
+      setDraft(body); // the text comes back so nothing is lost
+      setSendErr(failedTo('No se pudo enviar.', err));
     } else if (lastQueued()) {
       toast.show(SAVED_OFFLINE); // the bubble shows "Pendiente de enviar" until it goes out
     }
@@ -57,7 +61,7 @@ export default function Mensajes() {
 
   return (
     <Screen bottomInset={false} scroll={false}>
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.flex} behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}>
         <View style={s.header}>
           <Avatar initials={nurse ? initialsOf(nurse.name) : '?'} size={44} />
           <View style={s.flex}>
@@ -94,6 +98,7 @@ export default function Mensajes() {
               </Pressable>
             ))}
           </ScrollView>
+          {sendErr ? <ErrorText>{sendErr}</ErrorText> : null}
           <View style={s.inputRow}>
             <TextInput
               value={draft}
@@ -112,7 +117,7 @@ export default function Mensajes() {
               accessibilityLabel="Enviar mensaje"
               style={({ pressed }) => [s.send, pressed && { opacity: 0.85 }]}
             >
-              <Icon name="send" size={22} color={colors.white} strokeWidth={2} />
+              <Icon name="send" size={22} color={colors.onPri} strokeWidth={2} />
             </Pressable>
           </View>
         </View>
@@ -130,7 +135,7 @@ function Bubble({ m, who }: { m: Message; who: string }) {
         accessibilityLabel={`${self ? `Tú dijiste: ${m.body}` : `${who} dijo: ${m.body}`}${m.pending ? ', pendiente de enviar' : ''}`}
         style={[s.bubble, self ? s.self : s.other]}
       >
-        <T size={16} lh={1.4} color={self ? colors.white : colors.ink}>{m.body}</T>
+        <T size={16} lh={1.4} color={self ? colors.onPri : colors.ink}>{m.body}</T>
       </View>
       <T size={13} color={colors.ink2} style={{ textAlign: self ? 'right' : 'left', fontVariant: ['tabular-nums'] }}>
         {m.pending ? `${m.time} · Pendiente de enviar` : m.time}

@@ -44,7 +44,7 @@ test('shows me, my shift and shares the current invite code letter by letter', a
 
   expect(await screen.findByLabelText('Código V X 7 K 2 P')).toBeTruthy();
   fireEvent.press(screen.getByText('Compartir código'));
-  expect(share).toHaveBeenCalledWith({ message: 'Únete al cuidado de Elena en Tend. Código: VX7K2P' });
+  expect(share).toHaveBeenCalledWith({ message: 'Únete al cuidado de Elena en Oliva. Código: VX7K2P' });
 
   fireEvent.press(screen.getByText('Configuración y tamaño de texto'));
   expect(mockPush).toHaveBeenCalledWith('/settings');

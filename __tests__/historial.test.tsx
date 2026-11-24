@@ -118,7 +118,12 @@ beforeEach(() => {
 
 type Styled = { props: { style?: StyleProp<TextStyle> } };
 const flat = (n: Styled): TextStyle => StyleSheet.flatten(n.props.style) ?? {};
-const dotOf = (name: string) => screen.getByRole('button', { name }).findAll((n: Styled) => flat(n).width === 12)[0];
+// The day's status icon: its stroke colour and its shape (path data).
+type PathNode = { props: { stroke?: string; d?: string } };
+const markOf = (name: string) => {
+  const p = screen.getByRole('button', { name }).findAll((n: PathNode) => typeof n.props.d === 'string' && !!n.props.stroke)[0];
+  return p ? { stroke: p.props.stroke, d: p.props.d } : null;
+};
 
 const titles = () => screen.getAllByText(/^(Metformina|Losartán|Signos vitales|A vigilar|Rosa entregó)/).map((t) => t.props.children);
 
@@ -138,21 +143,23 @@ test('nurse sees today: header, summary and events newest first', () => {
   expect(screen.getByText('Pendiente')).toBeTruthy();
 });
 
-test('day dots read the day status', () => {
+test('day marks read the day status by shape, not colour alone', () => {
   render(<Historial />);
   expect(screen.getByRole('button', { name: 'martes 13: algo a revisar' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'miércoles 14: todo normal' })).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'viernes 9: sin registros' })).toBeTruthy();
-  // Colour backs up the word: alert danger, warn warn, unrec field, ok ok, empty line.
-  expect(flat(dotOf('lunes 12: algo sin registrar')).backgroundColor).toBe(colors.field);
-  expect(flat(dotOf('jueves 15, hoy: con alertas')).backgroundColor).toBe(colors.danger);
-  expect(flat(dotOf('martes 13: algo a revisar')).backgroundColor).toBe(colors.warn);
-  expect(flat(dotOf('miércoles 14: todo normal')).backgroundColor).toBe(colors.ok);
-  expect(flat(dotOf('viernes 9: sin registros')).backgroundColor).toBe(colors.line);
-  // Selected day: pri fill, white text, white ring.
+  // Unselected days: each status has its own icon, in its colour.
+  const unrec = markOf('lunes 12: algo sin registrar');
+  const warn = markOf('martes 13: algo a revisar');
+  const ok = markOf('miércoles 14: todo normal');
+  expect([unrec?.stroke, warn?.stroke, ok?.stroke]).toEqual([colors.field, colors.warn, colors.ok]);
+  expect(new Set([unrec?.d, warn?.d, ok?.d]).size).toBe(3);
+  expect(markOf('viernes 9: sin registros')).toBeNull(); // an empty day has no mark
+  // Selected day: pri fill, onPri text, and the icon keeps its shape in onPri.
   expect(flat(screen.getByRole('button', { name: 'jueves 15, hoy: con alertas' })).backgroundColor).toBe(colors.pri);
-  expect(flat(screen.getByText('15')).color).toBe(colors.white);
-  expect(flat(dotOf('jueves 15, hoy: con alertas')).borderColor).toBe(colors.white);
+  expect(flat(screen.getByText('15')).color).toBe(colors.onPri);
+  const alert = markOf('jueves 15, hoy: con alertas');
+  expect(alert?.stroke).toBe(colors.onPri);
+  expect([unrec?.d, warn?.d, ok?.d]).not.toContain(alert?.d);
   expect(flat(screen.getByRole('button', { name: 'martes 13: algo a revisar' })).backgroundColor).toBe(colors.surface);
   expect(flat(screen.getByText('13')).color).toBe(colors.ink);
 });

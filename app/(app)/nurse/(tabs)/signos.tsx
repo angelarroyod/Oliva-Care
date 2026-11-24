@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, Alert, type TextInputProps } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, type TextInputProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
 import { Screen, PageHeader } from '@/components/Screen';
@@ -20,6 +20,7 @@ import type { GlucoseCtx, VitalKind } from '@/features/care/types';
 import { useTextScale } from '@/features/settings/textScale';
 import { supabase } from '@/lib/supabase';
 import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, font, radius } from '@/theme';
 
 // Message line look per state (prototype MS table).
@@ -103,7 +104,7 @@ export default function NurseSignos() {
       if (!unqueue(queued)) {
         const undoErr = await mutate(supabase.from('vital_readings').delete().eq('control_id', controlId), 'vital_readings');
         if (undoErr) {
-          Alert.alert('No se pudo deshacer', undoErr);
+          toast.show(failedTo('No se pudo deshacer.', undoErr));
           return;
         }
       }
@@ -256,7 +257,7 @@ function VitalField({
                       accessibilityLabel={`${n} de 10`}
                       style={[s.painBtn, sel ? s.painSel : null]}
                     >
-                      <T size={18} bold color={sel ? colors.white : colors.ink}>{n}</T>
+                      <T size={18} bold color={sel ? colors.onPri : colors.ink}>{n}</T>
                     </Pressable>
                   );
                 })}
@@ -315,7 +316,7 @@ const s = StyleSheet.create({
   head: { marginTop: 4 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   addChip: { alignSelf: 'flex-start', paddingLeft: 12, paddingRight: 16 },
-  card: { backgroundColor: colors.surface, borderWidth: 2, borderRadius: radius.card, paddingVertical: 14, paddingHorizontal: 16, gap: 10 },
+  card: { backgroundColor: colors.surface, borderWidth: 2, borderRadius: radius.card, borderCurve: 'continuous', paddingVertical: 14, paddingHorizontal: 16, gap: 10 },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   // Prototype in-card pill: 44 tall, 1.5px border, 14 bold (smaller than Button).
   remove: {
@@ -326,7 +327,7 @@ const s = StyleSheet.create({
   bpRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   bpPart: { flex: 1, minWidth: 0, gap: 6 },
   input: {
-    minHeight: 54, borderWidth: 1.5, borderColor: colors.field, borderRadius: 12, paddingHorizontal: 14,
+    minHeight: 54, borderWidth: 1.5, borderColor: colors.field, borderRadius: 12, borderCurve: 'continuous', paddingHorizontal: 14,
     backgroundColor: colors.surface, color: colors.ink, fontFamily: font.bold,
   },
   focused: { borderColor: colors.focus, borderWidth: 2.5 },
@@ -334,14 +335,14 @@ const s = StyleSheet.create({
   ctxChip: { flexBasis: '45%', flexGrow: 1, paddingHorizontal: 10 },
   painRow: { flexDirection: 'row', gap: 6 },
   painBtn: {
-    flex: 1, minHeight: 48, borderRadius: 12, borderWidth: 1.5, borderColor: colors.field,
+    flex: 1, minHeight: 48, borderRadius: 12, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.field,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
   painSel: { backgroundColor: colors.pri, borderWidth: 2, borderColor: colors.pri },
   legend: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   msg: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   failBox: {
-    backgroundColor: colors.dangerSoft, borderWidth: 2, borderColor: colors.danger, borderRadius: radius.card,
+    backgroundColor: colors.dangerSoft, borderWidth: 2, borderColor: colors.danger, borderRadius: radius.card, borderCurve: 'continuous',
     paddingVertical: 14, paddingHorizontal: 16, gap: 10,
   },
 });

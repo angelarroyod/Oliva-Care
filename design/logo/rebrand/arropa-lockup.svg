@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 876 256">
+<g transform="translate(16 48) scale(0.625)">
+  <circle cx="124" cy="120" r="28"/>
+  <path d="M124 52A68 68 0 1 0 192 120V196" fill="none" stroke="#000" stroke-width="28" stroke-linecap="round"/>
+</g>
+<!-- exploration only: live text, outlines come in the kit -->
+<text x="208" y="168" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="120" letter-spacing="-3">arropa</text>
+</svg>

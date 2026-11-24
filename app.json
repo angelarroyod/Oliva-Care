@@ -1,14 +1,19 @@
 {
   "expo": {
-    "name": "Tend",
+    "name": "Oliva",
     "slug": "tend",
     "scheme": "tend",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      },
       "supportsTablet": false,
       "bundleIdentifier": "com.tend.app",
       "usesAppleSignIn": true,
@@ -20,7 +25,7 @@
     "android": {
       "package": "com.tend.app",
       "adaptiveIcon": {
-        "backgroundColor": "#DDF1E8",
+        "backgroundColor": "#F5F2E6",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

@@ -39,8 +39,8 @@ export default function Legal() {
         <H2 size={19}>Aviso médico</H2>
         <Bullets
           items={[
-            'Tend sirve para anotar y compartir el cuidado.',
-            'Tend no es un aparato médico. No diagnostica ni sustituye a un profesional de la salud.',
+            'Oliva sirve para anotar y compartir el cuidado.',
+            'Oliva no es un aparato médico. No diagnostica ni sustituye a un profesional de la salud.',
             <T key="sos" size={16} lh={1.45} bold>En una emergencia, llama al 112.</T>,
           ]}
         />

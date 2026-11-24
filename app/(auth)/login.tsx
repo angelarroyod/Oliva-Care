@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { AppleButton } from '@/features/auth/appleAuth';
 import { useAuth } from '@/features/auth/useAuth';
 import { supabase } from '@/lib/supabase';
+import { errorText } from '@/lib/errors';
 import { colors, radius } from '@/theme';
 
 const EMAIL_RE = /.+@.+\..+/;
@@ -48,7 +49,7 @@ export default function Login() {
   const forgot = async () => {
     if (!emailOk) return toast.show('Escribe tu correo y te enviaremos un enlace.');
     const { error } = await supabase.auth.resetPasswordForEmail(mail);
-    toast.show(error ? error.message : `Te enviamos un enlace a ${mail}.`);
+    toast.show(error ? errorText(error, 'No se pudo enviar el enlace. Vuelve a intentarlo.')! : `Te enviamos un enlace a ${mail}.`);
   };
 
   return (
@@ -109,7 +110,7 @@ const s = StyleSheet.create({
   // Access screens use 24/32 padding (Screen gives 20/28).
   body: { gap: 20, paddingHorizontal: 4, paddingBottom: 4 },
   toggle: {
-    minWidth: 92, minHeight: 56, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.input,
+    minWidth: 92, minHeight: 56, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.input, borderCurve: 'continuous',
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12,
   },
   link: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },

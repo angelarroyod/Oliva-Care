@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import Mensajes from '../app/(app)/family/(tabs)/mensajes';
 import type { Message } from '@/features/care/hooks';
 
@@ -43,13 +42,12 @@ test('Enter sends; blank drafts are ignored', async () => {
 });
 
 test('a failed send restores the draft and shows the error', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   mockInsert.mockResolvedValueOnce({ error: { message: 'Sin conexión' } });
   render(<Mensajes />);
   const input = screen.getByLabelText('Escribe un mensaje a Carmen Morales');
   fireEvent.changeText(input, 'hola');
   fireEvent.press(screen.getByLabelText('Enviar mensaje'));
-  await waitFor(() => expect(alert).toHaveBeenCalledWith('No se pudo enviar', 'Sin conexión'));
+  expect(await screen.findByText('No se pudo enviar. Vuelve a intentarlo.')).toBeTruthy();
   expect(screen.getByLabelText('Escribe un mensaje a Carmen Morales').props.value).toBe('hola');
 });
 

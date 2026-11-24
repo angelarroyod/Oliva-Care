@@ -97,7 +97,7 @@ export default function Signup() {
           }}
         >
           <T size={15} lh={1.45}>
-            Acepto la política de privacidad. Entiendo que Tend sirve para anotar cuidados y{' '}
+            Acepto la política de privacidad. Entiendo que Oliva sirve para anotar cuidados y{' '}
             <T size={15} lh={1.45} bold>no es un aparato médico</T>.
           </T>
         </CheckRow>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, StyleSheet, Alert, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
 import { T, H2 } from '@/components/T';
@@ -19,6 +19,7 @@ import { MINUTE, addDays, firstName, fromMin, hhmm, lc, listY, localDate, longDa
 import type { ScheduleRow, SkipReason } from '@/features/care/types';
 import { supabase } from '@/lib/supabase';
 import { lastQueued, mutate, saved, unqueue } from '@/lib/db';
+import { failedTo } from '@/lib/errors';
 import { colors, radius } from '@/theme';
 
 type Look = {
@@ -78,6 +79,7 @@ export default function NurseMedicacion() {
   const [reason, setReason] = useState<SkipReason | null>(null);
   const [note, setNote] = useState('');
   const [omitErr, setOmitErr] = useState('');
+  const [cardErr, setCardErr] = useState<{ key: string; text: string } | null>(null); // shown on the card that failed
 
   const schedOf = (d: Dose) => schedules.find((s) => s.id === d.scheduleId) as ScheduleRow;
   const who = (t: string) => onShift(nurses, t)?.short ?? 'quien esté de turno';
@@ -126,15 +128,16 @@ export default function NurseMedicacion() {
       };
     }
     return {
-      card: CARD.given, circle: CIRCLE.given, icon: 'check', iconInk: colors.white,
+      card: CARD.given, circle: CIRCLE.given, icon: 'check', iconInk: colors.onPri,
       state: `Dada · ${at}`, stateInk: colors.ok,
       line: `Por ${names(r?.recorded_by ?? null) || 'el equipo'}${r?.recorded_late ? ', anotada más tarde' : ''}.`,
       lineInk: colors.ink2,
     };
   };
 
-  const undo = (d: Dose) => async () => {
-    const err = await mutate(
+  // Back to "por registrar" (pending, or sin registrar once its hour has passed).
+  const reset = (d: Dose) =>
+    mutate(
       supabase
         .from('medication_doses')
         .update({ status: 'pending', recorded_at: null, recorded_by: null, recorded_late: false, skip_reason: null, skip_note: null })
@@ -143,7 +146,8 @@ export default function NurseMedicacion() {
         .eq('recorded_by', meId), // only my own record: never erase another nurse's
       'medication_doses',
     );
-    if (err) Alert.alert('No se pudo deshacer', err);
+  const undoFailed = (err: string | null) => {
+    if (err) toast.show(failedTo('No se pudo deshacer.', err));
   };
 
   // Someone else recorded it since this card / sheet was opened (realtime updated
@@ -175,16 +179,44 @@ export default function NurseMedicacion() {
     );
     setBusy(false);
     const queued = lastQueued();
-    if (!err) toast.show(saved(msg), () => (unqueue(queued) ? undefined : undo(d)()));
+    if (!err) toast.show(saved(msg), () => (unqueue(queued) ? undefined : reset(d).then(undoFailed)));
     return err;
   };
 
   const give = async (d: Dose) => {
+    setCardErr(null);
     const taken = takenBy(d);
-    if (taken) return Alert.alert('No se pudo guardar', taken);
+    if (taken) return setCardErr({ key: d.key, text: taken });
     const msg = d.status === 'unrecorded' ? `${d.name} de las ${d.time} anotada como dada.` : `${d.name} dada a las ${hhmm(new Date())}.`;
     const err = await record(d, { status: 'given', skip_reason: null, skip_note: null }, msg);
-    if (err) Alert.alert('No se pudo guardar', err);
+    if (err) setCardErr({ key: d.key, text: err });
+  };
+
+  // Corregir: a lasting way to fix my own record after the toast has gone. The
+  // dose goes back to "por registrar" with its buttons; Deshacer puts the old
+  // record back exactly as it was.
+  const correct = async (d: Dose) => {
+    const prev = d.row;
+    if (!prev) return;
+    setCardErr(null);
+    setBusy(true);
+    const err = await reset(d);
+    setBusy(false);
+    if (err) return setCardErr({ key: d.key, text: err });
+    const queued = lastQueued();
+    toast.show(saved(`${d.name} de las ${d.time}: registro anulado. Ya puedes anotarla de nuevo.`), async () => {
+      if (unqueue(queued)) return;
+      const { status, recorded_at, recorded_by, recorded_late, skip_reason, skip_note } = prev;
+      undoFailed(
+        await mutate(
+          supabase.from('medication_doses').upsert(
+            { schedule_id: d.scheduleId, patient_id: pid, scheduled_for: scheduledRow(d), status, recorded_at, recorded_by, recorded_late, skip_reason, skip_note },
+            { onConflict: 'schedule_id,scheduled_for' },
+          ),
+          'medication_doses',
+        ),
+      );
+    });
   };
 
   const openOmit = (d: Dose) => {
@@ -241,8 +273,10 @@ export default function NurseMedicacion() {
                 what={`${d.name} de las ${d.time}${localDate(d.at) === today ? '' : ' de ayer'}`}
                 look={look(d)}
                 busy={busy}
+                err={cardErr?.key === d.key ? cardErr.text : null}
                 onGive={() => give(d)}
                 onSkip={() => openOmit(d)}
+                onCorrect={d.row?.recorded_by === meId && (d.status === 'given' || d.status === 'skipped') ? () => correct(d) : undefined}
               />
             ))}
           </View>
@@ -317,7 +351,9 @@ export default function NurseMedicacion() {
 }
 
 // `what` names the dose in the button labels, so a screen reader knows which one it records.
-function DoseCard({ d, what, look, busy, onGive, onSkip }: { d: Dose; what: string; look: Look; busy: boolean; onGive: () => void; onSkip: () => void }) {
+function DoseCard({ d, what, look, busy, err, onGive, onSkip, onCorrect }: {
+  d: Dose; what: string; look: Look; busy: boolean; err: string | null; onGive: () => void; onSkip: () => void; onCorrect?: () => void;
+}) {
   return (
     <View style={[s.card, look.card]}>
       <View style={s.top}>
@@ -359,20 +395,33 @@ function DoseCard({ d, what, look, busy, onGive, onSkip }: { d: Dose; what: stri
           />
         </View>
       ) : null}
+      {onCorrect ? (
+        <Button
+          label="Corregir"
+          accessibilityLabel={`Corregir: ${what}`}
+          variant="neutral"
+          height={48}
+          onPress={onCorrect}
+          disabled={busy}
+          style={s.correct}
+        />
+      ) : null}
+      {err ? <ErrorText>{err}</ErrorText> : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
   section: { gap: 10 },
-  card: { borderRadius: radius.card, paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
+  card: { borderRadius: radius.card, borderCurve: 'continuous', paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   circle: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   right: { alignItems: 'flex-end', gap: 2 },
   num: { fontVariant: ['tabular-nums'] },
   buttons: { flexDirection: 'row', gap: 8 },
+  correct: { alignSelf: 'flex-start', paddingHorizontal: 18 },
   flex: { flex: 1, paddingHorizontal: 12 },
-  empty: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, padding: 16 },
+  empty: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.field, borderRadius: radius.card, borderCurve: 'continuous', padding: 16 },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   info: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
 });
