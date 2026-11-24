@@ -21,6 +21,21 @@
         "8082"
       ],
       "port": 8082
+    },
+    {
+      "name": "demo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8083"
+      ],
+      "env": {
+        "EXPO_PUBLIC_DEMO": "1"
+      },
+      "port": 8083
     }
   ]
 }

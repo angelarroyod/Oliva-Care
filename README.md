@@ -15,6 +15,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-3A5A2C" alt="Proprietary license"></a>
   <img src="https://img.shields.io/badge/Expo-SDK%2056-000020?logo=expo" alt="Expo SDK 56">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <a href="https://angelarroyod.github.io/vela/"><img src="https://img.shields.io/badge/demo-try%20it%20in%20the%20browser-3A5A2C" alt="Web demo"></a>
   <img src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white" alt="Supabase">
 </p>
 
@@ -38,6 +39,7 @@ It is built with **Expo (React Native + TypeScript)**, **expo-router** and **Sup
 
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Accessibility and design](#accessibility-and-design)
 - [Getting started](#getting-started)
@@ -48,6 +50,16 @@ It is built with **Expo (React Native + TypeScript)**, **expo-router** and **Sup
 - [Roadmap](#roadmap)
 - [Documentation](#documentation)
 - [License](#license)
+
+## Screenshots
+
+**[Try the web demo →](https://angelarroyod.github.io/vela/)** Sample patient and data, no account and no backend: everything stays in your browser and resets on reload. Pick *Probar como enfermera* or *Probar como familiar*.
+
+| Nurse · Inicio | Nurse · Signos | Nurse · Medicación | Care plan |
+|:-:|:-:|:-:|:-:|
+| <img src="docs/screenshots/nurse-inicio.png" width="200" alt="Nurse home with Lo siguiente"> | <img src="docs/screenshots/nurse-signos.png" width="200" alt="Vitals form from the care plan"> | <img src="docs/screenshots/nurse-medicacion.png" width="200" alt="Today's doses"> | <img src="docs/screenshots/plan.png" width="200" alt="Care plan"> |
+| **Family · Estado** | **Historial** | **Family · Mensajes** | **Welcome** |
+| <img src="docs/screenshots/family-estado.png" width="200" alt="Family dashboard"> | <img src="docs/screenshots/family-historial.png" width="200" alt="Daily history"> | <img src="docs/screenshots/family-mensajes.png" width="200" alt="Messages"> | <img src="docs/screenshots/welcome.png" width="200" alt="Welcome screen"> |
 
 ## Features
 
@@ -156,6 +168,10 @@ npm start
 | `npm test` | Jest test suite |
 | `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
 
+### Offline demo
+
+Set `EXPO_PUBLIC_DEMO=1` to run the app against an in-memory sample patient instead of Supabase ([`src/lib/demo.ts`](src/lib/demo.ts)): a fake `fetch` answers supabase-js, so every screen runs its real code. [`.github/workflows/demo.yml`](.github/workflows/demo.yml) exports it to GitHub Pages on every push to `main` (one-time setup: Settings → Pages → Source: GitHub Actions). The screenshots above come from it.
+
 ## Architecture
 
 ```
@@ -239,12 +255,13 @@ src/
   features/care/        live hooks and pure care logic
   features/auth/        auth provider, membership, route guard, invites, Apple sign-in
   features/settings/    text size
-  lib/                  Supabase client, env, mutate/outbox, Spanish error texts, prefs
+  lib/                  Supabase client, env, mutate/outbox, Spanish error texts, prefs, offline demo
 supabase/
   migrations/           SQL migrations, applied in order
   functions/            delete-account Edge Function
 design/logo/oliva/      brand kit, logo sources and exports
 __tests__/              unit and screen tests
+docs/screenshots/       README screenshots, captured from the offline demo
 docs/superpowers/       earlier specs and plans (written under the Vela name)
 ```
 

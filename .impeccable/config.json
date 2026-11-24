@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "design/social/social-preview.html"
+        ],
+        "createdAt": "2026-11-24T16:12:49.074Z",
+        "reason": "Claude: rendered PNG shows text inset 96-112px from card edge via absolutely positioned .content; pills have 10x20px padding at 22px text"
+      }
+    ]
+  }
+}
