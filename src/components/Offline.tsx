@@ -10,6 +10,11 @@ import { useToast } from './Toast';
 type Role = 'nurse' | 'family' | 'doctor';
 const RoleContext = createContext<Role | null>(null);
 
+// On web NetInfo checks reachability with a GET to '/', which is a 404 when the
+// app is served under a base path (the GitHub Pages demo at /<repo>/) and would
+// read as offline. Check the app's own root instead ('' in dev).
+if (process.env.EXPO_OS === 'web') NetInfo.configure({ reachabilityUrl: `${process.env.EXPO_BASE_URL ?? ''}/` });
+
 const records = (n: number) => (n === 1 ? '1 registro' : `${n} registros`);
 
 export function flushText({ sent, failed }: { sent: number; failed: number }) {
