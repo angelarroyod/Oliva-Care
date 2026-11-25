@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import {
-  SAVED_OFFLINE, flush, lastQueued, mutate, onInvalidate, outboxSnapshot, saved, setOnline, unqueue,
+  SAVED_OFFLINE, dropQueued, flush, lastQueued, mutate, onInvalidate, outboxSnapshot, saved, setOnline, unqueue,
 } from '@/lib/db';
 import { OFFLINE_ERROR } from '@/lib/errors';
 
@@ -73,7 +73,8 @@ test('offline: writes are kept on the phone, then sent in order with fresh auth'
   expect(await flush()).toEqual({ sent: 0, failed: 0 }); // still offline: nothing goes out
   setOnline(true);
   expect(await flush()).toEqual({ sent: 2, failed: 0 });
-  const [[url1, init1], [url2, init2]] = fetchMock.mock.calls;
+  // The dose is checked first (a GET, no method), so it can't overwrite another nurse's record.
+  const [[url1, init1], [url2, init2]] = fetchMock.mock.calls.filter(([, init]) => init.method);
   expect(url1).toContain('https://x.supabase.co/rest/v1/vital_readings');
   expect(init1).toMatchObject({ method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer tok', apikey: expect.any(String) }) });
   expect(JSON.parse(init1.body)).toEqual([{ control_id: 'k1', kind: 'hr', value: 72 }]);
@@ -104,12 +105,14 @@ test('offline, a request that already started (not a builder) just runs', async 
   expect(outboxSnapshot().pending).toBe(0);
 });
 
-test('flush: a duplicate counts as sent, a rejected write is dropped, a network drop keeps the rest', async () => {
+test('flush: a duplicate of a resend counts as sent, a rejected write is dropped, a network drop keeps the rest', async () => {
   setOnline(false);
   for (const k of ['a', 'b', 'c', 'd']) await mutate(reading(k), 'vital_readings');
   setOnline(true);
+  fetchMock.mockRejectedValueOnce(new TypeError('Network request failed')); // 'a' may have reached the server
+  expect(await flush()).toEqual({ sent: 0, failed: 0 });
   fetchMock
-    .mockResolvedValueOnce(res(409, { code: '23505' })) // already there (a resend after a lost response)
+    .mockResolvedValueOnce(res(409, { code: '23505' })) // already there: the resend after a lost response
     .mockResolvedValueOnce(res(403, { code: '42501' })) // RLS said no: retrying won't help
     .mockRejectedValueOnce(new TypeError('Network request failed'));
   expect(await flush()).toEqual({ sent: 1, failed: 1 });
@@ -118,7 +121,7 @@ test('flush: a duplicate counts as sent, a rejected write is dropped, a network 
   fetchMock.mockResolvedValueOnce(res(503)).mockResolvedValue(res(201)); // server hiccup: keep and retry later
   expect(await flush()).toEqual({ sent: 0, failed: 0 });
   expect(await flush()).toEqual({ sent: 2, failed: 0 });
-  expect(fetchMock).toHaveBeenCalledTimes(6);
+  expect(fetchMock).toHaveBeenCalledTimes(7);
 });
 
 test('a queue saved in an earlier session is sent after a restart', async () => {
@@ -129,4 +132,13 @@ test('a queue saved in an earlier session is sent after a restart', async () => 
   jest.isolateModules(() => { fresh = require('@/lib/db'); });
   expect(await fresh.flush()).toEqual({ sent: 1, failed: 0 });
   expect(fetchMock).toHaveBeenCalledWith('https://x.supabase.co/rest/v1/messages', expect.objectContaining({ body: '{"body":"Hola"}' }));
+});
+
+test('account deletion drops what that account still had queued', async () => {
+  setOnline(false);
+  await mutate(reading('k9'), 'vital_readings');
+  expect(outboxSnapshot().pending).toBe(1);
+  await dropQueued();
+  expect(outboxSnapshot().pending).toBe(0);
+  expect(mockPrefs.get('tend.outbox')).toBe('[]');
 });

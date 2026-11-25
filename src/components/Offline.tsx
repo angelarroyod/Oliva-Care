@@ -1,5 +1,5 @@
 import { createContext, use, useEffect, useSyncExternalStore, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { AppState, View, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { colors } from '@/theme';
 import { flush, invalidateAll, outboxSnapshot, setOnline, subscribeOutbox } from '@/lib/db';
@@ -25,23 +25,49 @@ export function flushText({ sent, failed }: { sent: number; failed: number }) {
   ].filter(Boolean).join(' ');
 }
 
+const RETRY_FIRST = 5_000;
+const RETRY_MAX = 60_000;
+
 // Mounted once inside the signed-in app: follows the connection, sends the
-// outbox when it comes back and says how many records went out.
+// outbox when it comes back and says how many records went out. A flush that
+// stops while the phone is online (a 503, an expired session, a timeout) is
+// tried again with backoff, and again whenever the app comes to the front, so
+// the queue never sits on the phone while the app looks online.
 export function OfflineSync({ role, children }: { role: Role; children: ReactNode }) {
   const { show } = useToast();
-  useEffect(
-    () =>
-      NetInfo.addEventListener(async (s) => {
-        // null = not checked yet; only a definite "no" counts as offline.
-        const on = s.isConnected !== false && s.isInternetReachable !== false;
-        const back = setOnline(on) && on;
-        if (!on) return;
-        const r = await flush();
-        if (r.sent || r.failed) show(flushText(r));
-        if (back) invalidateAll();
-      }),
-    [show],
-  );
+  useEffect(() => {
+    let delay = RETRY_FIRST;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let alive = true;
+    const run = async () => {
+      clearTimeout(timer);
+      const r = await flush();
+      if (!alive) return;
+      if (r.sent || r.failed) show(flushText(r));
+      const { online, pending } = outboxSnapshot();
+      if (online && pending) {
+        timer = setTimeout(run, delay);
+        delay = Math.min(delay * 2, RETRY_MAX);
+      } else delay = RETRY_FIRST;
+    };
+    const offNet = NetInfo.addEventListener(async (s) => {
+      // null = not checked yet; only a definite "no" counts as offline.
+      const on = s.isConnected !== false && s.isInternetReachable !== false;
+      const back = setOnline(on) && on;
+      if (!on) return clearTimeout(timer);
+      await run();
+      if (back) invalidateAll();
+    });
+    const app = AppState.addEventListener('change', (st) => {
+      if (st === 'active') void run();
+    });
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      offNet();
+      app.remove();
+    };
+  }, [show]);
   return <RoleContext.Provider value={role}>{children}</RoleContext.Provider>;
 }
 

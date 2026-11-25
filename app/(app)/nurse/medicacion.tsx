@@ -151,8 +151,9 @@ export default function NurseMedicacion() {
   };
 
   // Someone else recorded it since this card / sheet was opened (realtime updated
-  // the list). ponytail: two taps inside realtime latency can still overwrite —
-  // a conditional record_dose RPC (update ... where status = 'pending') closes that.
+  // the list). Doses queued offline get the same check in the outbox before they're
+  // sent. ponytail: two taps inside realtime latency can still overwrite; a
+  // conditional record_dose RPC (update ... where status = 'pending') closes that.
   const takenBy = (d: Dose) => {
     const live = doses.find((x) => x.key === d.key);
     if (!live || live.status === 'pending' || live.status === 'unrecorded') return null;

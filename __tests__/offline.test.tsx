@@ -4,7 +4,7 @@ import { ToastProvider } from '@/components/Toast';
 import { OfflineSync, flushText } from '@/components/Offline';
 import { Screen } from '@/components/Screen';
 import { T } from '@/components/T';
-import { mutate } from '@/lib/db';
+import { mutate, outboxSnapshot } from '@/lib/db';
 
 jest.mock('@/lib/prefs', () => ({ readPref: async () => null, writePref: async () => {} }));
 jest.mock('@/lib/supabase', () => ({
@@ -59,6 +59,26 @@ test('family: says it is showing the last saved data', async () => {
   expect(screen.getByText(/^Sin conexión\. Estás viendo lo último que se guardó\. Se actualizará al volver la conexión\.$/)).toBeTruthy();
   await net(true);
   expect(screen.queryByText(/Sin conexión/)).toBeNull();
+});
+
+test('online, a flush that stopped on a server error is tried again a few seconds later', async () => {
+  jest.useFakeTimers({ doNotFake: ['nextTick', 'queueMicrotask', 'setImmediate'] });
+  try {
+    ui('nurse');
+    await net(false);
+    await act(async () => { await mutate(write(), 'care_events'); });
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 503, json: async () => null });
+    await net(true); // the server hiccups: the record stays on the phone
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(outboxSnapshot().pending).toBe(1);
+    await act(async () => { await jest.advanceTimersByTimeAsync(5_000); }); // no network change needed
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(outboxSnapshot().pending).toBe(0);
+    expect(screen.getByText('Conexión recuperada. Se envió 1 registro.')).toBeTruthy();
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 test('reconnect toast wording', () => {
