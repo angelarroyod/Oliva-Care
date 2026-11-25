@@ -39,7 +39,13 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "dosis"
+        }
+      ]
     ]
   }
 }

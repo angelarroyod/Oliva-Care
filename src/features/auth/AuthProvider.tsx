@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { errorText } from '@/lib/errors';
+import { forgetReminders } from '@/features/notifications/push';
 
 type AuthValue = {
   session: Session | null;
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    await forgetReminders(); // while the session can still delete its push token
     await supabase.auth.signOut();
   };
 

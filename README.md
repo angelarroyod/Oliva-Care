@@ -140,12 +140,24 @@ Run the files in [`supabase/migrations/`](supabase/migrations) **in order** in t
 | `0003_care_features.sql` | Care-feature tables; idempotent and purely additive |
 | `0004_vital_readings_unique.sql` | One reading per vital per control |
 | `0005_rls_perf.sql` | Faster policies (same access) and foreign-key indexes |
+| `0006_dose_reminders.sql` | Patient time zone and push-token registration for dose reminders |
 
 > [!NOTE]
 > - Before running `0003` on a project with existing data, set `LEGACY_TZ` near the end of the file to your patients' time zone (default `Europe/Madrid`).
 > - Re-run `0005` after re-running `0002`, `0003` or vela-web's migrations.
 
 Account deletion uses the [`delete-account`](supabase/functions/delete-account) Edge Function; deploy it to your project for that feature to work.
+
+#### Dose reminders (optional)
+
+Nurses can turn on push reminders in Configuración. They need a native build (not Expo Go or web) and this server setup:
+
+1. Link an EAS project (`eas init`, which adds `extra.eas.projectId` to the app config) and add push credentials with `eas credentials`: an APNs key for iOS, an FCM V1 key for Android.
+2. Make a dev build: `eas build --profile development`.
+3. Deploy the function: `supabase functions deploy dose-reminders --no-verify-jwt`, then `supabase secrets set CRON_SECRET=<random>`.
+4. Follow the steps at the top of [`supabase/cron/dose_reminders.sql`](supabase/cron/dose_reminders.sql) and run it, so pg_cron calls the function every minute.
+
+The first reminder goes out at each medicine's reminder time to the nurse on shift then; a second one at +30 min if the dose still isn't recorded. Dose times are read in `patients.time_zone` (default `Europe/Madrid`), which must match the nurses' phones.
 
 ### 3. Run
 
@@ -255,10 +267,12 @@ src/
   features/care/        live hooks and pure care logic
   features/auth/        auth provider, membership, route guard, invites, Apple sign-in
   features/settings/    text size
+  features/notifications/ dose-reminder registration and notification taps
   lib/                  Supabase client, env, mutate/outbox, Spanish error texts, prefs, offline demo
 supabase/
   migrations/           SQL migrations, applied in order
-  functions/            delete-account Edge Function
+  functions/            delete-account and dose-reminders Edge Functions
+  cron/                 pg_cron job for dose reminders (run by hand)
 design/logo/oliva/      brand kit, logo sources and exports
 __tests__/              unit and screen tests
 docs/screenshots/       README screenshots, captured from the offline demo
@@ -272,7 +286,7 @@ docs/superpowers/       earlier specs and plans (written under the Vela name)
 - [x] **M3 — Live data:** realtime sync between nurse and family
 - [x] **M4 — Polish:** write-error handling, accessibility labels, privacy and medical-disclaimer screen
 - [x] **M5 — Redesign:** accessible Oliva identity, the six care features, schedules, shifts, new schema, dark mode, offline outbox
-- [ ] Push reminders and a server-side *sin registrar* job (needs an EAS dev build)
+- [x] Push dose reminders (Edge Function + pg_cron; needs an EAS dev build)
 - [ ] Port vela-web to the new schema
 - [ ] Release prep: EAS builds, TestFlight, store metadata, clinician review of default ranges
 

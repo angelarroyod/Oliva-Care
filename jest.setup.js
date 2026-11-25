@@ -21,3 +21,16 @@ jest.mock('react-native-safe-area-context', () => {
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
+
+// No native push under Jest. Tests that care about reminders mock
+// '@/features/notifications/push' themselves.
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(() => Promise.resolve(null)),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'undetermined', canAskAgain: true })),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'denied', canAskAgain: false })),
+  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ type: 'expo', data: 'ExponentPushToken[test]' })),
+  useLastNotificationResponse: jest.fn(() => null),
+  AndroidImportance: { HIGH: 4 },
+}));
+jest.mock('expo-device', () => ({ isDevice: false }));
