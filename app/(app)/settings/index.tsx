@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { View, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
@@ -10,6 +10,7 @@ import { H2, T } from '@/components/T';
 import { useAuth } from '@/features/auth/useAuth';
 import { useCare } from '@/features/care/hooks';
 import { useTextScale, MIN_SCALE, MAX_SCALE } from '@/features/settings/textScale';
+import { dropQueued, outboxSnapshot, subscribeOutbox } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { colors, radius } from '@/theme';
 
@@ -40,6 +41,7 @@ export default function Settings() {
   const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(false);
+  const { pending } = useSyncExternalStore(subscribeOutbox, outboxSnapshot);
 
   // aria-live in the design: announce on both platforms (accessibilityLiveRegion is Android-only).
   const scale = (next: number) => {
@@ -62,6 +64,7 @@ export default function Settings() {
       return;
     }
     setDeleting(false);
+    await dropQueued(); // what this account saved offline goes with it
     await leave();
   };
 
@@ -86,6 +89,11 @@ export default function Settings() {
 
       <RowLink title="Privacidad y aviso médico" onPress={() => router.push('/legal')} />
 
+      {pending ? (
+        <Notice tone="alert">
+          {`${pending === 1 ? 'Tienes 1 registro' : `Tienes ${pending} registros`} sin enviar. Se enviará${pending === 1 ? '' : 'n'} cuando vuelvas a entrar con esta cuenta y haya conexión.`}
+        </Notice>
+      ) : null}
       <Pressable onPress={leave} accessibilityRole="button" style={({ pressed }) => [s.row, pressed && { opacity: 0.85 }]}>
         <T size={17} bold>Cerrar sesión</T>
       </Pressable>

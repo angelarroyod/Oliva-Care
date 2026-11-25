@@ -139,7 +139,7 @@ test('adding a condition with suggested vitals, then undo', async () => {
   fireEvent.press(screen.getByText('Añadir con 2 signos nuevos'));
 
   expect(await screen.findByText('EPOC / asma añadida. El formulario de signos ya pide oxígeno en sangre y frecuencia respiratoria.')).toBeTruthy();
-  expect(mockCalls[0]).toMatchObject({ table: 'patient_conditions', op: 'insert', arg: { patient_id: 'p1', condition: 'copd_asthma', added_by: 'n1' } });
+  expect(mockCalls[0]).toMatchObject({ table: 'patient_conditions', op: 'upsert', arg: { patient_id: 'p1', condition: 'copd_asthma', added_by: 'n1' } });
   const up = mockCalls[1].arg as VitalPlanRow[];
   expect(up.map((r) => [r.kind, r.ranges, r.alert_low, r.source_conditions])).toEqual([
     ['spo2', [[88, 100]], 85, ['copd_asthma']],
@@ -198,7 +198,7 @@ test('if the plan rows fail, the new condition is removed again', async () => {
   fireEvent.press(screen.getByText('EPOC / asma'));
   fireEvent.press(screen.getByText('Añadir con 3 signos nuevos'));
   expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy(); // inline, next to the buttons
-  expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.insert', 'vital_plans.upsert', 'patient_conditions.delete']);
+  expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.upsert', 'vital_plans.upsert', 'patient_conditions.delete']);
   expect(mockCalls[2].filters).toEqual([['eq', 'patient_id', 'p1'], ['eq', 'condition', 'copd_asthma']]);
   expect(screen.queryByText(/añadida/)).toBeNull();
   // The sheet stays open so the nurse can try again.
@@ -206,13 +206,13 @@ test('if the plan rows fail, the new condition is removed again', async () => {
 });
 
 test('a failed condition insert writes nothing else', async () => {
-  mockFail = 'patient_conditions.insert';
+  mockFail = 'patient_conditions.upsert';
   ui();
   fireEvent.press(screen.getByText('Añadir condición'));
   fireEvent.press(screen.getByText('EPOC / asma'));
   fireEvent.press(screen.getByText('Solo añadir la condición'));
   expect(await screen.findByText('No se pudo guardar. Vuelve a intentarlo.')).toBeTruthy(); // inline, next to the buttons
-  expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.insert']);
+  expect(mockCalls.map((c) => `${c.table}.${c.op}`)).toEqual(['patient_conditions.upsert']);
   expect(screen.queryByText(/añadida/)).toBeNull();
 });
 

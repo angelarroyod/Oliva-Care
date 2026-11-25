@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { setOutboxUser } from '@/lib/db';
 import { errorText } from '@/lib/errors';
 
 type AuthValue = {
@@ -18,11 +19,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // The offline outbox only sends (and shows) the signed-in account's writes.
     supabase.auth.getSession().then(({ data }) => {
+      setOutboxUser(data.session?.user.id ?? null);
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setOutboxUser(s?.user.id ?? null);
+      setSession(s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 

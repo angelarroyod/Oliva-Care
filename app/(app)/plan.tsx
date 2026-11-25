@@ -97,7 +97,11 @@ export default function PlanScreen() {
     setBusy(true);
     // added_at after the plan rows' updated_at so the audit line reads "añadió …".
     let err = await mutate(
-      supabase.from('patient_conditions').insert({ patient_id: pid, condition: c, added_by: meId || null, added_at: new Date().toISOString() }),
+      // Upsert that ignores a duplicate: a retry after a lost response finds it there and carries on.
+      supabase.from('patient_conditions').upsert(
+        { patient_id: pid, condition: c, added_by: meId || null, added_at: new Date().toISOString() },
+        { onConflict: 'patient_id,condition', ignoreDuplicates: true },
+      ),
       'patient_conditions', 'vital_plans',
     );
     if (!err && rows.length) {
