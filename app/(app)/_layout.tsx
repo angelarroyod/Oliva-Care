@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { useAuth } from '@/features/auth/useAuth';
 import { useMembership } from '@/features/auth/useMembership';
 import { OfflineSync } from '@/components/Offline';
 import { inWrongArea, routeForState } from '@/features/auth/guard';
+import { PushRouting } from '@/features/notifications/PushRouting';
 
 export default function AppLayout() {
   const { session, loading: authLoading } = useAuth();
@@ -17,6 +19,7 @@ export default function AppLayout() {
   return (
     <OfflineSync role={membership.role}>
       <Stack screenOptions={{ headerShown: false }} />
+      {membership.role === 'nurse' && Platform.OS !== 'web' ? <PushRouting /> : null}
     </OfflineSync>
   );
 }

@@ -4,9 +4,11 @@ import { MINUTE, addDays, atTime, localDate, sameDay, shortTime, startOfDay } fr
 // Doses are expanded client-side from medication_schedules; medication_doses
 // only stores what someone recorded (given / skipped). Pending vs unrecorded
 // comes from the clock, so no cron is needed for the UI to be right.
-// ponytail: when push reminders land (pg_cron + Edge Function), the job can
-// materialize pending/unrecorded rows; a stored 'unrecorded' row is honoured here.
-export const REMIND_AGAIN_MIN = 30; // +30 min: remind the nurse on shift again
+// Push reminders come from supabase/functions/dose-reminders (pg_cron), which
+// mirrors these rules in its plan.ts and may store a 'pending' row to mark a
+// reminder as sent. ponytail: it doesn't materialize 'unrecorded' rows; a
+// stored one is honoured here if that ever changes.
+export const REMIND_AGAIN_MIN = 30; // +30 min: remind the nurse on shift again (also in dose-reminders/plan.ts)
 export const UNRECORDED_MIN = 60; // +60 min: the dose becomes "Sin registrar"
 export const HISTORY_DAYS = 7;
 

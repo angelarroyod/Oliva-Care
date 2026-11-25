@@ -1,15 +1,17 @@
-import { useState } from 'react';
-import { View, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Pressable, StyleSheet, AccessibilityInfo, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, PageHeader } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { Card, RowLink } from '@/components/Card';
 import { Notice } from '@/components/Status';
+import { ErrorText, SwitchRow } from '@/components/Controls';
 import { Sheet } from '@/components/Sheet';
 import { H2, T } from '@/components/T';
 import { useAuth } from '@/features/auth/useAuth';
 import { useCare } from '@/features/care/hooks';
 import { useTextScale, MIN_SCALE, MAX_SCALE } from '@/features/settings/textScale';
+import { disableReminders, enableReminders, reminderState, type PushState } from '@/features/notifications/push';
 import { supabase } from '@/lib/supabase';
 import { colors, radius } from '@/theme';
 
@@ -32,10 +34,67 @@ function ScaleButton({ glyph, size, label, disabled, onPress }: {
   );
 }
 
+// Nurses only: dose reminders on this phone (supabase/functions/dose-reminders).
+function DoseReminders() {
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    reminderState().then((s) => live && setState(s));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const toggle = async (on: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    if (on) {
+      const r = await enableReminders();
+      setState(r.state);
+      setErr(r.error);
+    } else {
+      const e = await disableReminders();
+      if (!e) setState('off');
+      setErr(e);
+    }
+    setBusy(false);
+  };
+
+  if (!state) return null;
+  return (
+    <Card gap={12}>
+      {state === 'unsupported' ? (
+        <>
+          <H2 size={17}>Recordatorios de dosis</H2>
+          <T size={16} color={colors.ink2}>Solo en la app instalada en el teléfono.</T>
+        </>
+      ) : (
+        <SwitchRow
+          title="Recordatorios de dosis"
+          sub="Un aviso en este teléfono cuando toque una dosis en tu turno, y otro si a los 30 min sigue sin anotar."
+          value={state === 'on'}
+          onChange={toggle}
+        />
+      )}
+      {state === 'denied' ? (
+        <>
+          <Notice tone="warn">Los avisos de Oliva están desactivados en los ajustes del teléfono.</Notice>
+          <Button label="Abrir ajustes del teléfono" variant="secondary" onPress={() => Linking.openSettings().catch(() => {})} />
+        </>
+      ) : null}
+      {err ? <ErrorText>{err}</ErrorText> : null}
+    </Card>
+  );
+}
+
 export default function Settings() {
   const router = useRouter();
   const { session, signOut } = useAuth();
-  const { patient, short } = useCare();
+  const { patient, short, role } = useCare();
   const { pct, setPct } = useTextScale();
   const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +137,8 @@ export default function Settings() {
         </View>
         <T size={16} color={colors.ink2}>Así se verá el texto en toda la app.</T>
       </Card>
+
+      {role === 'nurse' ? <DoseReminders /> : null}
 
       <Card gap={4}>
         <T size={15} color={colors.ink2}>Cuenta</T>
